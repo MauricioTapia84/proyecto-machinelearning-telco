@@ -8,3 +8,4 @@ seaborn>=0.13
 shap>=0.46
 jupyter>=1.0
 ipykernel>=6.29
+optuna>=3.7
