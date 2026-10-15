@@ -33,13 +33,30 @@ La tasa de churn cuantifica la magnitud inicial del problema. El Recall permite 
 
 El cálculo se puede reproducir con `python scripts/calculate_business_kpis.py`, utilizando el mismo split estratificado y el pipeline SVM persistido en `output/modelos/support_vector_machine_pipeline.joblib`.
 
+### Etapas CRISP-DM y trazabilidad
+
+El proyecto se organiza según las seis etapas de CRISP-DM. La siguiente tabla muestra qué se realizó y dónde está la evidencia:
+
+| Etapa CRISP-DM | Aplicación en este proyecto | Evidencia |
+|---|---|---|
+| Comprensión del negocio | Se definió el problema como la priorización de clientes con riesgo de churn para apoyar acciones de retención. Se establecieron objetivos y KPIs. | Esta sección del README y `scripts/calculate_business_kpis.py`. |
+| Comprensión de los datos | Se identificó la fuente, la variable objetivo, la estructura del dataset, los tipos, los valores faltantes, el desbalance y los patrones exploratorios. | `notebooks/01_EDA_y_Limpieza.ipynb`. |
+| Preparación de los datos | Se eliminaron duplicados, se trataron inconsistencias de `TotalCharges`, se separaron train/test y se aplicaron transformaciones dentro del flujo de modelamiento. | `notebooks/01_EDA_y_Limpieza.ipynb`, `src/pipeline.py` y `data/processed/`. |
+| Modelamiento | Se compararon Regresión Logística, Random Forest, Gradient Boosting y SVM, además de las representaciones originales y PCA + K-Means. | `notebooks/02_Modelado_y_Evaluacion.ipynb`. |
+| Evaluación | Se utilizaron Recall, Precision, F1-score, ROC-AUC, matrices de confusión, curvas ROC, Precision-Recall, Lift y Ganancia. La selección final priorizó Recall. | `notebooks/02_Modelado_y_Evaluacion.ipynb` y `output/graficos/`. |
+| Despliegue/uso | Se persistió el pipeline completo para inferencia posterior y se documentó su uso como apoyo a la priorización comercial. No se presenta como un servicio productivo desplegado. | `output/modelos/`, `src/train.py`, `scripts/train_model.py` y la sección de resultados de este README. |
+
+Esta trazabilidad permite distinguir entre lo que fue ejecutado en el proyecto y lo que queda como una posible evolución futura, especialmente el despliegue productivo y la medición del impacto real de campañas de retención.
+
 ## 2. Fuente de datos
 
-Se utiliza el dataset público Telco Customer Churn de Kaggle.
+Se utiliza el dataset público **Telco Customer Churn** distribuido en Kaggle por `blastchar`, cuyo origen y publicación educativa se atribuyen a IBM Sample Data Sets.
 
 - Archivo original: data/raw/WA_Fn-UseC_-Telco-Customer-Churn.csv
-- Dataset procesado: data/processed/teleco_clean.csv
+- Datos procesados: data/processed/train/ y data/processed/test/
 - Variable objetivo: Churn
+
+El archivo original contiene 7.043 clientes y 21 columnas: 20 variables predictoras y la variable objetivo `Churn`. Esta última es binaria y utiliza `Yes` para abandono y `No` para permanencia. En el dataset se observan 1.869 abandonos y 5.174 permanencias.
 
 La variable objetivo presenta un desbalance relevante, por lo que la evaluación se centra no solo en la precisión global, sino también en métricas orientadas a la detección de clientes en riesgo, especialmente recall y ROC-AUC.
 
@@ -201,15 +218,24 @@ El proyecto está estructurado para ser reproducible y reutilizable:
 
 ## 11. Consideraciones éticas y de negocio
 
-El modelo debe usarse como herramienta de apoyo para la toma de decisiones, no como reemplazo de la evaluación humana.
+El dataset utilizado es sintético y educativo, por lo que no contiene registros reales de clientes. Si el modelo se trasladara a datos reales, se deberían aplicar controles de privacidad, acceso restringido, minimización de datos y cumplimiento de la normativa vigente.
 
-Se recomienda:
+Los principales riesgos identificados son:
+
+- **Sesgo por segmentos:** variables como `gender`, `SeniorCitizen`, `tenure` y `MonthlyCharges` pueden generar diferencias de error o de priorización entre grupos.
+- **Falsos positivos:** un cliente clasificado como riesgoso podría recibir ofertas o contactos innecesarios, generando molestias o un uso ineficiente de recursos.
+- **Falsos negativos:** un cliente con riesgo real podría no ser contactado, perdiéndose una oportunidad de retención.
+- **Automatización indebida:** una predicción de churn no debe utilizarse para negar servicios, aumentar precios o tomar decisiones adversas sin revisión humana.
+
+Las medidas de mitigación consideradas son:
 
 - revisar la sensibilidad del umbral comercial
-- evaluar resultados por segmentos
+- evaluar Recall, precisión y tasas de error por segmentos
 - controlar falsos positivos en campañas de retención
 - mantener la supervisión del equipo comercial
 - evitar decisiones automáticas que afecten directamente al cliente sin revisión humana
+- utilizar explicaciones SHAP como apoyo para revisar predicciones y detectar comportamientos inesperados
+- validar cualquier campaña real mediante seguimiento o un grupo de comparación, porque el modelo predictivo no demuestra por sí solo que una intervención evite el abandono
 
 ## 12. Conclusión
 

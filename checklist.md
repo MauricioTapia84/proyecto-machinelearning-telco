@@ -3,9 +3,9 @@ Marcar cada punto al revisar el proyecto. Basado en la rúbrica, la transcripci�
 
 01 · Problema y metodología
 ☑  Problema de negocio, objetivos y KPIs definidos.
-☐  Fuente de datos y variable objetivo identificadas.
-☐  Etapas de CRISP-DM documentadas.
-☐  Impacto ético del proyecto considerado.
+☑  Fuente de datos y variable objetivo identificadas.
+☑  Etapas de CRISP-DM documentadas.
+☑  Impacto ético del proyecto considerado.
 
 02 · Análisis exploratorio (EDA)
 ☐  Calidad de datos revisada: tipos, nulos, duplicados e inconsistencias.
