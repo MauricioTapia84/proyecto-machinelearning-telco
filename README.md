@@ -58,6 +58,17 @@ Se utiliza el dataset público **Telco Customer Churn** distribuido en Kaggle po
 
 El archivo original contiene 7.043 clientes y 21 columnas: 20 variables predictoras y la variable objetivo `Churn`. Esta última es binaria y utiliza `Yes` para abandono y `No` para permanencia. En el dataset se observan 1.869 abandonos y 5.174 permanencias.
 
+### Control de calidad del dataset
+
+La revisión independiente del archivo original confirmó:
+
+- Tipos: `SeniorCitizen` y `tenure` son enteros; `MonthlyCharges` es decimal; `TotalCharges` llega como texto por contener espacios en blanco.
+- Nulos: no hay valores `NaN` explícitos, pero existen 11 espacios en blanco ocultos en `TotalCharges`; todos corresponden a clientes con `tenure = 0`.
+- Duplicados: no hay filas completamente duplicadas incluyendo `customerID`; al excluir ese identificador, se detectan 22 perfiles de variables duplicados, que se eliminan antes del split para evitar repetir observaciones equivalentes.
+- Inconsistencias: las categorías son válidas según el diccionario del dataset, `SeniorCitizen` solo contiene 0/1 y no se detectaron valores fuera de rango en `tenure` o `MonthlyCharges`.
+
+La limpieza convierte `TotalCharges` a numérico, asigna 0 a los casos con `tenure = 0` y utiliza la mediana solo como respaldo para cualquier nulo remanente.
+
 La variable objetivo presenta un desbalance relevante, por lo que la evaluación se centra no solo en la precisión global, sino también en métricas orientadas a la detección de clientes en riesgo, especialmente recall y ROC-AUC.
 
 ## 3. Stack tecnológico

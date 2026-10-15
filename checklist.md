@@ -8,12 +8,12 @@ Marcar cada punto al revisar el proyecto. Basado en la rúbrica, la transcripci�
 ☑  Impacto ético del proyecto considerado.
 
 02 · Análisis exploratorio (EDA)
-☐  Calidad de datos revisada: tipos, nulos, duplicados e inconsistencias.
-☐  Cada variable tiene análisis individual, gráfico y estadísticas pertinentes.
-☐  Distribuciones y patrones relevantes interpretados.
-☐  Variables predictoras comparadas con la variable objetivo.
-☐  Relaciones entre predictores analizadas (gráficos cruzados y correlación).
-☐  Análisis multivariable realizado y hallazgos explicados.
+☑  Calidad de datos revisada: tipos, nulos, duplicados e inconsistencias.
+☑  Cada variable tiene análisis individual, gráfico y estadísticas pertinentes.
+☑  Distribuciones y patrones relevantes interpretados.
+☑  Variables predictoras comparadas con la variable objetivo.
+☑  Relaciones entre predictores analizadas (gráficos cruzados y correlación).
+☑  Análisis multivariable realizado y hallazgos explicados.
 
 03 · Preparación y predictores
 ☐  Limpieza y transformaciones aplicadas y justificadas.
