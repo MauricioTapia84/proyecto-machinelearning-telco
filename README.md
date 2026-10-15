@@ -17,6 +17,22 @@ El flujo del proyecto sigue una estructura profesional basada en CRISP-DM, con s
 
 Construir y evaluar un modelo que permita detectar clientes con mayor riesgo de abandono a partir de variables demográficas, contractuales, de servicios y de facturación.
 
+### Problema de negocio y KPIs
+
+El problema de negocio es priorizar clientes con mayor riesgo de abandonar el servicio para apoyar acciones preventivas de retención. El modelo no ejecuta campañas ni reemplaza la decisión comercial: entrega una priorización basada en la probabilidad estimada de `Churn`.
+
+Los indicadores se separan entre indicadores de negocio, que describen el tamaño del problema y la utilidad de priorizar clientes, y métricas técnicas, que evalúan el desempeño del modelo.
+
+| Tipo | KPI o métrica | Definición | Fórmula | Valor obtenido | Meta |
+|---|---|---|---|---:|---|
+| Negocio | Tasa de churn | Proporción de clientes que abandonaron el servicio en el dataset completo. | Clientes con `Churn = Yes` / total de clientes | 1.869 / 7.043 = **26,54%** | No aplica: es la línea base descriptiva del dataset. |
+| Técnica con uso operativo | Recall de churn | Proporción de los clientes que realmente abandonaron que el modelo identificó como casos positivos. | Verdaderos positivos / (verdaderos positivos + falsos negativos) | **77,15%** en test para el SVM seleccionado | No se inventa una meta; se utiliza como criterio de selección porque el proyecto prioriza no dejar casos de churn sin detectar. |
+| Negocio | Captura de churn en el 20% de mayor riesgo | Proporción de todos los abandonos del conjunto de prueba concentrados en el 20% de clientes con mayor probabilidad predicha de churn. | Churn en el 20% superior / total de churn del conjunto de prueba | 191 / 372 = **51,34%** en test | No definida por falta de una meta comercial proporcionada. |
+
+La tasa de churn cuantifica la magnitud inicial del problema. El Recall permite evaluar la capacidad técnica de detectar clientes que efectivamente abandonan. La captura en el 20% superior permitirá responder cuántos abandonos se concentran si el equipo solo puede priorizar una quinta parte de la cartera. Este último indicador no representa una tasa futura de retención: mide únicamente la capacidad de priorización sobre datos históricos de prueba.
+
+El cálculo se puede reproducir con `python scripts/calculate_business_kpis.py`, utilizando el mismo split estratificado y el pipeline SVM persistido en `output/modelos/support_vector_machine_pipeline.joblib`.
+
 ## 2. Fuente de datos
 
 Se utiliza el dataset público Telco Customer Churn de Kaggle.
