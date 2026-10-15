@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import csv
+from statistics import median
 from pathlib import Path
 
 from sklearn.model_selection import train_test_split
@@ -28,7 +29,24 @@ def write_rows(path: Path, fieldnames: list[str], rows: list[dict[str, str]]) ->
         writer.writerows(rows)
 
 
+def deduplicate_rows(rows: list[dict[str, str]]) -> list[dict[str, str]]:
+    """Remove exact duplicate observations while ignoring the customer ID."""
+    unique_rows: list[dict[str, str]] = []
+    seen: set[tuple[tuple[str, str], ...]] = set()
+    for row in rows:
+        signature = tuple(
+            (key, str(value))
+            for key, value in row.items()
+            if key != 'customerID'
+        )
+        if signature not in seen:
+            seen.add(signature)
+            unique_rows.append(row)
+    return unique_rows
+
+
 def split_train_test(rows: list[dict[str, str]], random_seed: int = 42) -> tuple[list[dict[str, str]], list[dict[str, str]]]:
+    rows = deduplicate_rows(rows)
     labels = [str(row.get('Churn', 'Unknown')) for row in rows]
 
     train_rows, test_rows, _, _ = train_test_split(
@@ -43,13 +61,19 @@ def split_train_test(rows: list[dict[str, str]], random_seed: int = 42) -> tuple
     return train_rows, test_rows
 
 
-def clean_processed_rows(rows: list[dict[str, str]]) -> list[dict[str, str]]:
+def clean_processed_rows(
+    rows: list[dict[str, str]],
+    fallback_median: float | None = None,
+) -> list[dict[str, str]]:
+    """Clean TotalCharges using only partition-appropriate information."""
     cleaned: list[dict[str, str]] = []
     for row in rows:
         item = dict(row)
         total = str(item.get('TotalCharges', '')).strip()
         if total in {'', ' ', 'nan', 'NaN', 'None'}:
             item['TotalCharges'] = ''
+            if str(item.get('tenure', '')).strip() == '0':
+                item['TotalCharges'] = '0.0'
         cleaned.append(item)
 
     values = []
@@ -61,12 +85,13 @@ def clean_processed_rows(rows: list[dict[str, str]]) -> list[dict[str, str]]:
             except ValueError:
                 pass
 
-    median = sum(values) / len(values) if values else 0.0
+    if fallback_median is None:
+        fallback_median = float(median(values)) if values else 0.0
 
     for row in cleaned:
         total = str(row.get('TotalCharges', '')).strip()
         if total in {'', ' ', 'nan', 'NaN', 'None'}:
-            row['TotalCharges'] = str(median)
+            row['TotalCharges'] = str(fallback_median)
 
     return cleaned
 
@@ -95,10 +120,16 @@ def main() -> None:
     write_rows(RAW_TRAIN_DIR / 'WA_Fn-UseC_-Telco-Customer-Churn_train.csv', fieldnames, train_rows)
     write_rows(RAW_TEST_DIR / 'WA_Fn-UseC_-Telco-Customer-Churn_test.csv', fieldnames, test_rows)
 
-    cleaned_rows = clean_processed_rows(rows)
-    proc_train, proc_test = match_split_rows(cleaned_rows, train_rows, test_rows)
+    proc_train = clean_processed_rows(train_rows)
+    train_total_charges = [
+        float(row['TotalCharges'])
+        for row in proc_train
+        if str(row.get('TotalCharges', '')).strip() not in {'', 'nan', 'NaN', 'None'}
+    ]
+    train_median = float(median(train_total_charges)) if train_total_charges else 0.0
+    proc_test = clean_processed_rows(test_rows, fallback_median=train_median)
 
-    processed_fieldnames = [key for key in cleaned_rows[0].keys() if key != 'customerID']
+    processed_fieldnames = [key for key in proc_train[0].keys() if key != 'customerID']
     for row in proc_train:
         row.pop('customerID', None)
     for row in proc_test:

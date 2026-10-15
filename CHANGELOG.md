@@ -32,3 +32,13 @@
   - Se agregó `tabulate` a [requirements.txt](requirements.txt) y [environment.yml](environment.yml) para garantizar la ejecución reproducible de las tablas Markdown del notebook.
   - Se ejecutó el notebook EDA completo desde cero sin errores, manteniendo el análisis SHAP para la etapa final.
   - Se completaron los seis subpuntos del punto 02 del checklist.
+
+- #### 3.2. Verificación del punto 04: Aprendizaje no supervisado
+
+  - Se verificó la implementación reproducible de PCA y K-Means en el flujo ETL, ajustando las transformaciones únicamente con entrenamiento.
+  - Se retuvieron 18 componentes PCA, equivalentes al 95,18% de la varianza, y se generaron tres segmentos mediante K-Means.
+  - Se incorporó un perfil interpretable de los segmentos con tamaño, tasa de abandono, antigüedad, cargos, servicios, tipo de contrato, fibra óptica y método de pago.
+  - Se documentaron los patrones descriptivos de los tres clusters y se aclaró que el silhouette de 0,0462 refleja una separación débil.
+  - Se explicó la utilidad de los segmentos como contexto para priorizar revisiones comerciales, manteniendo el modelo supervisado como mecanismo principal de priorización.
+  - Se aclaró que los segmentos no implican causalidad ni permiten estimar por sí solos el efecto futuro de campañas de retención.
+  - Se completaron los tres subpuntos del punto 04 del checklist.

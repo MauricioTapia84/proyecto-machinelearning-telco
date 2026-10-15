@@ -71,6 +71,34 @@ La limpieza convierte `TotalCharges` a numérico, asigna 0 a los casos con `tenu
 
 La variable objetivo presenta un desbalance relevante, por lo que la evaluación se centra no solo en la precisión global, sino también en métricas orientadas a la detección de clientes en riesgo, especialmente recall y ROC-AUC.
 
+### Transformaciones aplicadas y justificación
+
+Las transformaciones se aplican de forma reproducible y respetando la separación entre entrenamiento y prueba:
+
+| Transformación | Aplicación | Justificación |
+|---|---|---|
+| Eliminación de `customerID` | Antes del modelamiento | Es un identificador único y no representa una característica generalizable del cliente. |
+| Eliminación de perfiles duplicados | Antes de separar train/test | Evita que observaciones equivalentes aparezcan en ambos conjuntos y alteren la evaluación. |
+| Conversión de `TotalCharges` | Texto a numérico | Permite realizar estadísticas y transformaciones matemáticas válidas. |
+| Tratamiento de `TotalCharges` vacío | `0.0` cuando `tenure = 0`; mediana como respaldo | Los clientes sin antigüedad aún no acumulan cargos; cualquier caso restante se imputa con un estadístico robusto. |
+| Variables derivadas | Servicios totales, ratio de cargos por antigüedad, indicador de internet y cliente antiguo | Resume información operativa y permite representar relaciones potencialmente útiles para el modelo. |
+| Variables numéricas continuas | Imputación mediana, transformación Yeo-Johnson y escalado cuando corresponde | Reduce el efecto de asimetrías y coloca las variables en una escala comparable. |
+| Variables categóricas | Imputación por moda y One-Hot Encoding | Convierte categorías nominales en predictores utilizables sin imponer un orden artificial. |
+| Balanceo de clases | SMOTE dentro del entrenamiento | Aumenta la representación de la clase `Churn` sin modificar el conjunto de prueba. |
+
+La mediana, los escaladores, el codificador y las demás transformaciones estadísticas se ajustan únicamente con entrenamiento y luego se aplican a prueba. Esta lógica está implementada en [src/pipeline.py](src/pipeline.py) y en el ETL de [notebooks/01_EDA_y_Limpieza.ipynb](notebooks/01_EDA_y_Limpieza.ipynb).
+
+### Selección inicial de predictores
+
+Antes del modelamiento se conserva como línea base el conjunto completo de **19 predictores originales**: variables demográficas (`gender`, `SeniorCitizen`, `Partner`, `Dependents`), antigüedad (`tenure`), servicios contratados, tipo de contrato, facturación, método de pago y cargos (`MonthlyCharges`, `TotalCharges`). Esta decisión se justifica porque todas representan dimensiones disponibles al momento de priorizar clientes y fueron revisadas durante el EDA.
+
+Se excluyen únicamente:
+
+- `customerID`, porque es un identificador único sin capacidad de generalización.
+- `Churn`, porque es la variable objetivo y no puede utilizarse como predictor.
+
+Como complemento se generan cuatro variables derivadas —servicios totales, ratio de cargos por antigüedad, indicador de internet y cliente antiguo— porque resumen relaciones de negocio previamente observadas. No se eliminan predictores originales en esta etapa: la relevancia posterior y la comparación contra esta línea base se revisarán después del modelamiento.
+
 ## 3. Stack tecnológico
 
 - Python 3.11

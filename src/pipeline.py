@@ -44,12 +44,12 @@ def clean_data(data: pd.DataFrame) -> pd.DataFrame:
 
 
 def prepare_dataset(data: pd.DataFrame) -> pd.DataFrame:
-    """Reproduce the EDA cleaning before separating features and target."""
+    """Reproduce deterministic EDA cleaning before separating features and target.
+
+    Statistical imputation is intentionally deferred to the pipeline after
+    the train/test split so that the test set cannot influence the fit.
+    """
     cleaned = clean_data(data)
-    if 'TotalCharges' in cleaned:
-        cleaned['TotalCharges'] = cleaned['TotalCharges'].fillna(
-            cleaned['TotalCharges'].median()
-        )
     return cleaned.drop_duplicates().reset_index(drop=True)
 
 

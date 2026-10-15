@@ -16,22 +16,22 @@ Marcar cada punto al revisar el proyecto. Basado en la rúbrica, la transcripci�
 ☑  Análisis multivariable realizado y hallazgos explicados.
 
 03 · Preparación y predictores
-☐  Limpieza y transformaciones aplicadas y justificadas.
-☐  Datos separados para entrenamiento y prueba, sin fuga de información.
-☐  Predictores iniciales seleccionados y justificados antes del modelamiento.
-☐  Relevancia de predictores revisada después y comparada con la selección inicial.
-☐  Uso de PCA evaluado frente a variables originales y decisión justificada.
+☑  Limpieza y transformaciones aplicadas y justificadas.
+☑  Datos separados para entrenamiento y prueba, sin fuga de información.
+☑  Predictores iniciales seleccionados y justificados antes del modelamiento.
+☑  Relevancia de predictores revisada después y comparada con la selección inicial.
+☑  Uso de PCA evaluado frente a variables originales y decisión justificada.
 
-04 · Modelos supervisados
+04 · Aprendizaje no supervisado
+☑  Al menos una técnica no supervisada implementada.
+☑  Patrones, agrupaciones o segmentos identificados e interpretados.
+☑  Utilidad de los hallazgos para el negocio explicada.
+
+05 · Modelos supervisados
 ☐  Problema definido como clasificación o regresión.
 ☐  Al menos dos modelos supervisados implementados.
 ☐  Selección de algoritmos y configuraciones justificada.
 ☐  Modelos comparados con métricas adecuadas y elección final explicada.
-
-05 · Aprendizaje no supervisado
-☐  Al menos una técnica no supervisada implementada.
-☐  Patrones, agrupaciones o segmentos identificados e interpretados.
-☐  Utilidad de los hallazgos para el negocio explicada.
 
 06 · Resultados y decisiones
 ☐  Métricas interpretadas, no solo mostradas.

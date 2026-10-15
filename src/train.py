@@ -1,4 +1,4 @@
-"""Train and persist the Telco churn pipeline."""
+"""Train and persist the Telco churn pipeline from the raw English schema."""
 
 from pathlib import Path
 import sys
@@ -13,7 +13,7 @@ from src.pipeline import TARGET, build_pipeline, prepare_dataset
 
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
-DATA_PATH = PROJECT_ROOT / 'data' / 'processed' / 'teleco_clean.csv'
+DATA_PATH = PROJECT_ROOT / 'data' / 'raw' / 'WA_Fn-UseC_-Telco-Customer-Churn.csv'
 MODEL_PATH = PROJECT_ROOT / 'models' / 'telco_churn_pipeline.joblib'
 
 
