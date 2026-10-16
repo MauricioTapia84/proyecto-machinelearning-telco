@@ -28,13 +28,13 @@ Marcar cada punto al revisar el proyecto. Basado en la rúbrica, la transcripci�
 ☑  Utilidad de los hallazgos para el negocio explicada.
 
 05 · Modelos supervisados
-☐  Problema definido como clasificación o regresión.
-☐  Al menos dos modelos supervisados implementados.
-☐  Selección de algoritmos y configuraciones justificada.
-☐  Modelos comparados con métricas adecuadas y elección final explicada.
+☑  Problema definido como clasificación o regresión.
+☑  Al menos dos modelos supervisados implementados.
+☑  Selección de algoritmos y configuraciones justificada.
+☑  Modelos comparados con métricas adecuadas y elección final explicada.
 
 06 · Resultados y decisiones
-☐  Métricas interpretadas, no solo mostradas.
+☑  Métricas interpretadas, no solo mostradas.
 ☐  Conclusiones y recomendaciones vinculadas a los KPIs.
 ☐  Explicado cómo se usaría el modelo y qué decisión apoyaría.
 

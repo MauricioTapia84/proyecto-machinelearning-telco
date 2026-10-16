@@ -42,3 +42,13 @@
   - Se explicó la utilidad de los segmentos como contexto para priorizar revisiones comerciales, manteniendo el modelo supervisado como mecanismo principal de priorización.
   - Se aclaró que los segmentos no implican causalidad ni permiten estimar por sí solos el efecto futuro de campañas de retención.
   - Se completaron los tres subpuntos del punto 04 del checklist.
+
+- #### 3.3. Verificación del punto 05: Modelos supervisados
+
+  - Se confirmó que el problema corresponde a una clasificación binaria de abandono (`Churn`).
+  - Se verificó la implementación de Regresión Logística, Random Forest, Gradient Boosting y Support Vector Machine.
+  - Se documentó la justificación de los algoritmos y sus configuraciones de referencia, incluyendo el tratamiento del desbalance mediante SMOTE dentro del entrenamiento.
+  - Se corrigió la selección del modelo para utilizar Recall y ROC-AUC promedio de validación cruzada sobre train, manteniendo test reservado para la evaluación final.
+  - Se compararon las representaciones originales y PCA + K-Means con métricas adecuadas para el desbalance: Recall, precisión, F1 y ROC-AUC.
+  - Se seleccionó Originales + Support Vector Machine, con Recall CV de 0,8222, ROC-AUC CV de 0,8417, Recall test de 0,8091 y ROC-AUC test de 0,8397.
+  - Se completaron los cuatro subpuntos del punto 05 del checklist.
