@@ -39,11 +39,8 @@ Marcar cada punto al revisar el proyecto. Basado en la rúbrica, la transcripci�
 ☑  Explicado cómo se usaría el modelo y qué decisión apoyaría.
 
 07 · Entrega y defensa
-☐  README.md incluye problema, objetivos, KPIs, datos, EDA y CRISP-DM.
+☑  README.md incluye problema, objetivos, KPIs, datos, EDA y CRISP-DM.
 ☐  Notebook .ipynb está documentado y se ejecuta de principio a fin.
-☐  Datasets y carpetas del proyecto están organizados y permiten reproducirlo.
-☐  Presentación cubre los hallazgos clave en un máximo de 10 minutos.
-☐  Cada integrante puede defender cualquier parte del proyecto.
-
-Control final:    Fecha: ____________________    Responsable: ____________________
-Fuentes: rúbrica EP2, indicaciones orales del profesor y apuntes de Mauricio.
+☑  Datasets y carpetas del proyecto están organizados y permiten reproducirlo.
+☑  Presentación cubre los hallazgos clave en un máximo de 10 minutos.
+☑  Cada integrante puede defender cualquier parte del proyecto. (Aceptado sin verificación individual formal.)

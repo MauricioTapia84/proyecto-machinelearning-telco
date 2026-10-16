@@ -71,6 +71,18 @@ La limpieza convierte `TotalCharges` a numérico, asigna 0 a los casos con `tenu
 
 La variable objetivo presenta un desbalance relevante, por lo que la evaluación se centra no solo en la precisión global, sino también en métricas orientadas a la detección de clientes en riesgo, especialmente recall y ROC-AUC.
 
+### Resumen del análisis exploratorio
+
+El EDA identificó los siguientes patrones descriptivos relevantes:
+
+- La tasa histórica de churn es 26,54% y la clase `Churn = Yes` está desbalanceada frente a la permanencia.
+- Los contratos mes a mes presentan mayor abandono que los contratos de uno o dos años.
+- Los clientes con menor antigüedad concentran una proporción mayor de abandono que los clientes antiguos.
+- Se observaron diferencias de churn asociadas a servicios de internet, método de pago y cargos mensuales; estas relaciones se utilizan para orientar la exploración y no se interpretan como causalidad.
+- Las variables numéricas fueron revisadas con distribuciones, boxplots, estadísticas descriptivas y comparaciones frente a `Churn`; las variables categóricas se analizaron con frecuencias, porcentajes y tasas de abandono por categoría.
+
+El detalle de las visualizaciones, tablas y explicaciones se encuentra en [notebooks/01_EDA_y_Limpieza.ipynb](notebooks/01_EDA_y_Limpieza.ipynb).
+
 ### Transformaciones aplicadas y justificación
 
 Las transformaciones se aplican de forma reproducible y respetando la separación entre entrenamiento y prueba:
@@ -141,8 +153,6 @@ project-root/
 │   ├── pipeline.py
 │   ├── split_data.py
 │   └── train.py
-├── images/
-├── models/
 ├── main.py
 ├── environment.yml
 ├── requirements.txt
@@ -210,8 +220,10 @@ python scripts\train_model.py
 ### Ejecutar flujo completo
 
 ```powershell
-python main.py
+python scripts\run_project.py
 ```
+
+Este comando genera las particiones en `data/raw/` y `data/processed/`, entrena el pipeline reutilizable y guarda el modelo en `models/`. Las salidas de los notebooks se conservan en `output/graficos/` y `output/modelos/`.
 
 ## 8. Resultados actuales
 

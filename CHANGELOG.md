@@ -60,3 +60,12 @@
   - Se documentó el flujo de uso operativo: ordenar la cartera por probabilidad de churn, priorizar según la capacidad disponible, revisar el contexto del segmento y mantener supervisión humana.
   - Se aclaró que el modelo apoya la decisión de a qué clientes realizar una revisión preventiva, pero no determina automáticamente una oferta ni demuestra causalidad sobre la retención.
   - Se completaron los tres subpuntos del punto 06 del checklist.
+
+- #### 3.5. Avance del punto 07: Entrega y defensa
+
+  - Se verificó que el README incluya el problema, objetivos, KPIs, datos, resumen del EDA y trazabilidad CRISP-DM.
+  - Se documentó la organización de datasets, notebooks, código, salidas y scripts reproducibles.
+  - Se incorporó [docs/presentacion_ep2.md](docs/presentacion_ep2.md) como guion de presentación de 9 minutos y 30 segundos, cubriendo los hallazgos y resultados principales.
+  - Se incorporó [docs/guia_defensa_ep2.md](docs/guia_defensa_ep2.md) con preguntas y respuestas para preparar la defensa del proyecto.
+  - Se aceptó administrativamente el subpunto de defensa individual sin exigir una verificación formal de cada integrante.
+  - Se mantiene pendiente la ejecución completa desde cero de [notebooks/02_Modelado_y_Evaluacion.ipynb](notebooks/02_Modelado_y_Evaluacion.ipynb), incluyendo la sección SHAP.

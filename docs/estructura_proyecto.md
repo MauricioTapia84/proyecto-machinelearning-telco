@@ -1,6 +1,6 @@
-# Estructura Profesional del Proyecto
+# Estructura actual del proyecto
 
-## Organización recomendada
+La estructura versionada separa los datos, el código, los notebooks y los artefactos generados:
 
 project/
 ├── data/
@@ -28,15 +28,19 @@ project/
 │   ├── pipeline.py
 │   ├── split_data.py
 │   └── train.py
-├── models/
-├── images/
 ├── main.py
 ├── environment.yml
 ├── requirements.txt
 ├── README.md
 └── .gitignore
 
-## Recomendación metodológica
+`models/` puede aparecer después de ejecutar `scripts/train_model.py` o `scripts/run_project.py`. Las salidas de los notebooks se almacenan en `output/graficos/` y `output/modelos/`; no se mezclan con los datos originales ni con el código fuente.
+
+## Flujo reproducible
+
+Desde la raíz del proyecto se puede ejecutar `python scripts/run_project.py` para generar las particiones y entrenar el pipeline. Para reproducir el análisis documentado, se ejecutan posteriormente los notebooks en orden.
+
+## Organización metodológica
 
 ### Notebook 1
 - setup
