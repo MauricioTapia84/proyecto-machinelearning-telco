@@ -8,14 +8,55 @@ import numpy as np
 import pandas as pd
 from imblearn.over_sampling import SMOTE
 from imblearn.pipeline import Pipeline as ImblearnPipeline
-from sklearn.base import BaseEstimator, TransformerMixin
+from sklearn.base import BaseEstimator, TransformerMixin, clone
+from sklearn.cluster import KMeans
 from sklearn.compose import ColumnTransformer
+from sklearn.decomposition import PCA
 from sklearn.impute import SimpleImputer
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, PowerTransformer, StandardScaler
 from sklearn.svm import SVC
 
+from src.data import deduplicate_customer_profiles
+
 TARGET = 'Churn'
+
+
+class PCAKMeansFeatures(BaseEstimator, TransformerMixin):
+    """Fit PCA and K-Means on the current training fold and append cluster indicators."""
+
+    def __init__(
+        self,
+        variance_threshold: float = 0.95,
+        n_clusters: int = 4,
+        random_state: int = 42,
+    ) -> None:
+        self.variance_threshold = variance_threshold
+        self.n_clusters = n_clusters
+        self.random_state = random_state
+
+    def fit(self, X: Any, y: Any = None) -> 'PCAKMeansFeatures':
+        values = np.asarray(X)
+        max_components = min(values.shape[0], values.shape[1])
+        self.pca_ = PCA(
+            n_components=min(self.variance_threshold, max_components),
+            svd_solver='full',
+        )
+        components = self.pca_.fit_transform(values)
+        self.kmeans_ = KMeans(
+            n_clusters=self.n_clusters,
+            random_state=self.random_state,
+            n_init=10,
+        ).fit(components)
+        return self
+
+    def transform(self, X: Any) -> np.ndarray:
+        components = self.pca_.transform(np.asarray(X))
+        labels = self.kmeans_.predict(components)
+        clusters = np.eye(self.n_clusters, dtype=components.dtype)[labels]
+        return np.hstack([components, clusters])
+
+
 class TelcoFeatureEngineer(BaseEstimator, TransformerMixin):
     """Apply the cleaning expected by the modeling notebook."""
 
@@ -31,7 +72,7 @@ class TelcoFeatureEngineer(BaseEstimator, TransformerMixin):
             zero_tenure = data['TotalCharges'].isna() & data['tenure'].eq(0)
             data.loc[zero_tenure, 'TotalCharges'] = 0.0
 
-        text_columns = data.select_dtypes(include=['object', 'category']).columns
+        text_columns = data.select_dtypes(include=['object', 'category', 'string']).columns
         for column in text_columns:
             data[column] = data[column].replace(r'^\s*$', np.nan, regex=True)
 
@@ -49,8 +90,13 @@ def prepare_dataset(data: pd.DataFrame) -> pd.DataFrame:
     Statistical imputation is intentionally deferred to the pipeline after
     the train/test split so that the test set cannot influence the fit.
     """
-    cleaned = clean_data(data)
-    return cleaned.drop_duplicates().reset_index(drop=True)
+    profiles = deduplicate_customer_profiles(
+        data,
+        id_column="customerID",
+        total_charges_column="TotalCharges",
+        tenure_column="tenure",
+    )
+    return clean_data(profiles).reset_index(drop=True)
 
 
 def build_preprocessor(X: pd.DataFrame) -> ColumnTransformer:
@@ -95,7 +141,35 @@ def build_preprocessor(X: pd.DataFrame) -> ColumnTransformer:
             ]), categorical_columns)
         )
 
-    return ColumnTransformer(transformers=transformers, remainder='drop')
+    return ColumnTransformer(
+        transformers=transformers,
+        remainder='drop',
+        sparse_threshold=0.0,
+    )
+
+
+def build_evaluation_pipeline(
+    X: pd.DataFrame,
+    classifier: Any,
+    *,
+    representation: str = 'original',
+    use_smote: bool = True,
+    random_state: int = 42,
+) -> ImblearnPipeline:
+    """Build a fold-safe pipeline for model comparison on raw input features."""
+    steps: list[tuple[str, Any]] = [
+        ('cleaner', TelcoFeatureEngineer()),
+        ('preprocessor', build_preprocessor(clean_data(X))),
+    ]
+    if representation == 'pca_kmeans':
+        steps.append(('pca_kmeans', PCAKMeansFeatures(random_state=random_state)))
+    elif representation != 'original':
+        raise ValueError(f'Unsupported representation: {representation}')
+
+    if use_smote:
+        steps.append(('smote', SMOTE(random_state=random_state)))
+    steps.append(('classifier', clone(classifier)))
+    return ImblearnPipeline(steps)
 
 
 def build_pipeline(

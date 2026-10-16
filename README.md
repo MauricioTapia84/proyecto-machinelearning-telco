@@ -2,7 +2,7 @@
 
 ## Descripción general
 
-Este proyecto desarrolla un modelo de clasificación supervisada para predecir la probabilidad de churn en clientes de telecomunicaciones. El objetivo principal es apoyar decisiones de retención, identificando con anticipación a los clientes con mayor riesgo de abandonar el servicio.
+Este proyecto desarrolla modelos de clasificación supervisada para ordenar clientes de telecomunicaciones por score de riesgo de churn y apoyar decisiones de retención. El score del SVM seleccionado no está calibrado como probabilidad.
 
 El flujo del proyecto sigue una estructura profesional basada en CRISP-DM, con separación clara entre:
 
@@ -19,19 +19,20 @@ Construir y evaluar un modelo que permita detectar clientes con mayor riesgo de 
 
 ### Problema de negocio y KPIs
 
-El problema de negocio es priorizar clientes con mayor riesgo de abandonar el servicio para apoyar acciones preventivas de retención. El modelo no ejecuta campañas ni reemplaza la decisión comercial: entrega una priorización basada en la probabilidad estimada de `Churn`.
+El problema de negocio es priorizar clientes con mayor riesgo de abandonar el servicio para apoyar acciones preventivas de retención. El modelo no ejecuta campañas ni reemplaza la decisión comercial: entrega un score de riesgo para ordenar clientes; no equivale necesariamente a una probabilidad calibrada de `Churn`.
 
 Los indicadores se separan entre indicadores de negocio, que describen el tamaño del problema y la utilidad de priorizar clientes, y métricas técnicas, que evalúan el desempeño del modelo.
+
+> **Estado de validación:** el notebook de modelado corregido se ejecutó de principio a fin en un kernel limpio `telco-ml`. Los valores de evaluación del modelo en esta sección corresponden a esa ejecución. La selección se hizo con CV en entrenamiento; el test se reportó después y no debe reutilizarse para modificar el modelo o sus parámetros.
 
 | Tipo | KPI o métrica | Definición | Fórmula | Valor obtenido | Meta |
 |---|---|---|---|---:|---|
 | Negocio | Tasa de churn | Proporción de clientes que abandonaron el servicio en el dataset completo. | Clientes con `Churn = Yes` / total de clientes | 1.869 / 7.043 = **26,54%** | No aplica: es la línea base descriptiva del dataset. |
-| Técnica con uso operativo | Recall de churn | Proporción de los clientes que realmente abandonaron que el modelo identificó como casos positivos. | Verdaderos positivos / (verdaderos positivos + falsos negativos) | **80,91%** en test para el SVM seleccionado | No se inventa una meta; se utiliza como criterio de selección porque el proyecto prioriza no dejar casos de churn sin detectar. |
-| Negocio | Captura de churn en el 20% de mayor riesgo | Proporción de todos los abandonos del conjunto de prueba concentrados en el 20% de clientes con mayor probabilidad predicha de churn. | Churn en el 20% superior / total de churn del conjunto de prueba | 194 / 372 = **52,15%** en test | No definida por falta de una meta comercial proporcionada. |
+| Técnica con uso operativo | Recall de churn | Proporción de los clientes que realmente abandonaron que el modelo identificó como casos positivos al umbral por defecto del clasificador. | Verdaderos positivos / (verdaderos positivos + falsos negativos) | **77,15%** (287 / 372) en test; SVM lineal ajustado | Se priorizó Recall en CV, pero el umbral no representa todavía una regla comercial. |
+| Técnica | ROC-AUC de churn | Capacidad de ordenar churn sobre no churn a través de distintos umbrales. | Área bajo la curva ROC | **0,8405** en test; CV de 5 folds: 0,8471 ± 0,0186 para el candidato seleccionado | No definida. |
+| Negocio | Captura de churn en el 20% de mayor riesgo | Proporción de todos los abandonos del conjunto de prueba entre los 281 clientes con mayor score de riesgo. | Churn en el 20% superior / total de churn del conjunto de prueba | 192 / 372 = **51,61%** en test; Lift **2,58** frente a selección aleatoria | No definida por falta de capacidad/costo comercial acordados. |
 
 La tasa de churn cuantifica la magnitud inicial del problema. El Recall permite evaluar la capacidad técnica de detectar clientes que efectivamente abandonan. La captura en el 20% superior permitirá responder cuántos abandonos se concentran si el equipo solo puede priorizar una quinta parte de la cartera. Este último indicador no representa una tasa futura de retención: mide únicamente la capacidad de priorización sobre datos históricos de prueba.
-
-El cálculo se reproduce ejecutando el [notebook de modelado](notebooks/02_Modelado_y_Evaluacion.ipynb), que aplica el split estratificado, selecciona el SVM mediante validación cruzada y calcula los indicadores sobre el conjunto de prueba reservado. El script `scripts/calculate_business_kpis.py` queda como apoyo auxiliar para recalcular los KPI cuando el entorno tenga instaladas sus dependencias.
 
 ### Etapas CRISP-DM y trazabilidad
 
@@ -43,8 +44,8 @@ El proyecto se organiza según las seis etapas de CRISP-DM. La siguiente tabla m
 | Comprensión de los datos | Se identificó la fuente, la variable objetivo, la estructura del dataset, los tipos, los valores faltantes, el desbalance y los patrones exploratorios. | `notebooks/01_EDA_y_Limpieza.ipynb`. |
 | Preparación de los datos | Se eliminaron duplicados, se trataron inconsistencias de `TotalCharges`, se separaron train/test y se aplicaron transformaciones dentro del flujo de modelamiento. | `notebooks/01_EDA_y_Limpieza.ipynb`, `src/pipeline.py` y `data/processed/`. |
 | Modelamiento | Se compararon Regresión Logística, Random Forest, Gradient Boosting y SVM, además de las representaciones originales y PCA + K-Means. | `notebooks/02_Modelado_y_Evaluacion.ipynb`. |
-| Evaluación | Se utilizaron Recall, Precision, F1-score, ROC-AUC, matrices de confusión, curvas ROC, Precision-Recall, Lift y Ganancia. La selección final priorizó Recall. | `notebooks/02_Modelado_y_Evaluacion.ipynb` y `output/graficos/`. |
-| Despliegue/uso | Se persistió el pipeline completo para inferencia posterior y se documentó su uso como apoyo a la priorización comercial. No se presenta como un servicio productivo desplegado. | `output/modelos/`, `src/train.py`, `scripts/train_model.py` y la sección de resultados de este README. |
+| Evaluación | El notebook implementa comparación CV con preprocesamiento, PCA/K-Means y SMOTE dentro de folds; Optuna se limita a CV en entrenamiento y el test se reporta al final. Se ejecutó de principio a fin en conda. | `notebooks/02_Modelado_y_Evaluacion.ipynb`; ver [la auditoría](docs/revision_integral_ep2.md). |
+| Despliegue/uso | Se plantea como apoyo a la priorización comercial, no como servicio productivo. El artefacto de inferencia completo y un único flujo reproducible siguen pendientes de implementación/verificación. | `src/`, `scripts/` y [la auditoría](docs/revision_integral_ep2.md). |
 
 Esta trazabilidad permite distinguir entre lo que fue ejecutado en el proyecto y lo que queda como una posible evolución futura, especialmente el despliegue productivo y la medición del impacto real de campañas de retención.
 
@@ -64,7 +65,7 @@ La revisión independiente del archivo original confirmó:
 
 - Tipos: `SeniorCitizen` y `tenure` son enteros; `MonthlyCharges` es decimal; `TotalCharges` llega como texto por contener espacios en blanco.
 - Nulos: no hay valores `NaN` explícitos, pero existen 11 espacios en blanco ocultos en `TotalCharges`; todos corresponden a clientes con `tenure = 0`.
-- Duplicados: no hay filas completamente duplicadas incluyendo `customerID`; al excluir ese identificador, se detectan 22 perfiles de variables duplicados, que se eliminan antes del split para evitar repetir observaciones equivalentes.
+- Duplicados: no hay filas completamente duplicadas incluyendo `customerID`; tras normalizar valores vacíos y aplicar la regla de `TotalCharges = 0` cuando `tenure = 0`, el proyecto elimina 22 perfiles idénticos antes del split, ignorando el identificador e incluyendo `Churn` en la comparación. Es una decisión analítica: perfiles iguales no prueban que se trate del mismo cliente. Se debe contrastar el resultado con una ejecución que conserve perfiles con distinto `customerID`.
 - Inconsistencias: las categorías son válidas según el diccionario del dataset, `SeniorCitizen` solo contiene 0/1 y no se detectaron valores fuera de rango en `tenure` o `MonthlyCharges`.
 
 La limpieza convierte `TotalCharges` a numérico, asigna 0 a los casos con `tenure = 0` y utiliza la mediana solo como respaldo para cualquier nulo remanente.
@@ -90,7 +91,7 @@ Las transformaciones se aplican de forma reproducible y respetando la separació
 | Transformación | Aplicación | Justificación |
 |---|---|---|
 | Eliminación de `customerID` | Antes del modelamiento | Es un identificador único y no representa una característica generalizable del cliente. |
-| Eliminación de perfiles duplicados | Antes de separar train/test | Evita que observaciones equivalentes aparezcan en ambos conjuntos y alteren la evaluación. |
+| Eliminación de perfiles duplicados | Después de normalizar valores, antes de separar train/test | Aplica la política acordada: perfiles idénticos (incluida la etiqueta) se consideran repetidos aunque cambie `customerID`; se documenta como supuesto, no como identidad confirmada. |
 | Conversión de `TotalCharges` | Texto a numérico | Permite realizar estadísticas y transformaciones matemáticas válidas. |
 | Tratamiento de `TotalCharges` vacío | `0.0` cuando `tenure = 0`; mediana como respaldo | Los clientes sin antigüedad aún no acumulan cargos; cualquier caso restante se imputa con un estadístico robusto. |
 | Variables derivadas | Servicios totales, ratio de cargos por antigüedad, indicador de internet y cliente antiguo | Resume información operativa y permite representar relaciones potencialmente útiles para el modelo. |
@@ -188,20 +189,16 @@ En este cuaderno se realiza:
 
 ## 6. Configuración del entorno con conda
 
-Se recomienda usar conda como entorno principal del proyecto.
+Se recomienda usar conda como entorno principal del proyecto. Desde la raíz del repositorio:
 
 ```powershell
 conda env create -f environment.yml
 conda activate telco-ml
+python -m ipykernel install --user --name telco-ml --display-name "Python (telco-ml conda)"
 ```
 
-Si no existe el entorno y se desea crear uno manualmente:
-
-```powershell
-conda create -n telco-ml python=3.11 -y
-conda activate telco-ml
-conda install -c conda-forge pandas numpy scikit-learn imbalanced-learn joblib matplotlib seaborn shap jupyter ipykernel -y
-```
+En VS Code, seleccionar el kernel **Python (telco-ml conda)** en ambos notebooks. `environment.yml` es la definición del entorno; después de cambiar dependencias, recrearlo o actualizarlo desde ese archivo.
+Si PowerShell indica que `conda` no se reconoce, abrir **Miniforge Prompt** y ejecutar allí los comandos; en VS Code hay que seleccionar el kernel del entorno, no el Python del sistema.
 
 ## 7. Ejecución del proyecto
 
@@ -223,27 +220,19 @@ python scripts\train_model.py
 python scripts\run_project.py
 ```
 
-Este comando genera las particiones en `data/raw/` y `data/processed/`, entrena el pipeline reutilizable y guarda el modelo en `models/`. Las salidas de los notebooks se conservan en `output/graficos/` y `output/modelos/`.
+**Estado:** estos scripts todavía no constituyen un flujo canónico verificado: la generación del split y el entrenamiento no consumen necesariamente la misma partición, y hay diferencias de rutas y artefactos. No se debe interpretar esta secuencia como reproducción de las métricas anteriores hasta completar la unificación descrita en la [auditoría](docs/revision_integral_ep2.md).
 
 ## 8. Resultados actuales
 
-Se entrenó un pipeline con preprocesamiento, SMOTE y SVM, seleccionado mediante validación cruzada sobre entrenamiento. En el conjunto de prueba se obtuvieron:
+La evaluación corregida seleccionó el **SVM lineal ajustado por Optuna** con validación cruzada estratificada de cinco folds, priorizando Recall y usando ROC-AUC como desempate. El candidato obtuvo Recall CV **0,8007 ± 0,0388** y ROC-AUC CV **0,8471 ± 0,0186**. Optuna evaluó cinco combinaciones de hiperparámetros usando únicamente entrenamiento; la configuración elegida fue `C=0,7821`, `class_weight=balanced`.
 
-- Accuracy: 0.6968
-- ROC AUC: aproximadamente 0.84
-- Recall para churn: 0.8091
-- Precision: 0.4588
-- F1-score: 0.5856
+En la evaluación final, realizada después de cerrar la selección, se obtuvieron Accuracy **0,7445**, Recall de churn **0,7715**, Precision de churn **0,5116**, F1 de churn **0,6152** y ROC-AUC **0,8405**. La matriz de confusión tuvo 759 verdaderos negativos, 274 falsos positivos, 85 falsos negativos y 287 verdaderos positivos. En el 20% superior del ranking de riesgo quedaron 192 de los 372 casos de churn (51,61%).
 
-El modelo se guarda en:
+El ranking usa el score de decisión del SVM, que **no es una probabilidad calibrada**. Estos resultados se encuentran en el notebook actualizado. El script de entrenamiento de `src/` es todavía un flujo aparte; el modelo persistido allí no debe asumirse idéntico al candidato de esta evaluación. Aún falta unificar el entrenamiento oficial y validar la persistencia/inferencia del artefacto seleccionado.
 
-```text
-models/telco_churn_pipeline.joblib
-```
+Estos resultados son descriptivos del test reservado. La precisión de 0,5116 indica que todavía hay falsos positivos; el umbral del clasificador no constituye una política de campaña y debe contrastarse con capacidad y costos reales.
 
-Estos resultados apoyan una estrategia de priorización comercial: el Recall permite detectar una proporción alta de los abandonos, mientras que la precisión más baja advierte que se deben gestionar los falsos positivos y definir el umbral con capacidad operativa real.
-
-En una operación, el modelo ordenaría la cartera por probabilidad de churn y apoyaría la decisión de qué clientes priorizar para una revisión preventiva de retención. El equipo podría comenzar por el 20% de mayor riesgo, revisar el contexto del cliente y del segmento, y decidir la acción con supervisión humana. La predicción no determina automáticamente una oferta ni demuestra que una campaña evitará el abandono.
+En una operación, el modelo ordenaría la cartera por score de riesgo de churn y apoyaría la decisión de qué clientes priorizar para una revisión preventiva de retención. El equipo podría comenzar por el 20% de mayor riesgo, revisar el contexto del cliente y del segmento, y decidir la acción con supervisión humana. La predicción no determina automáticamente una oferta ni demuestra que una campaña evitará el abandono.
 
 ## 9. Métricas de negocio y ML
 
@@ -255,11 +244,11 @@ Las métricas evaluadas en el proyecto incluyen:
 - ROC-AUC
 - accuracy
 
-Se prioriza el recall porque el costo de un falso negativo es alto: no detectar a un cliente con riesgo real puede provocar pérdida de ingreso y oportunidad de retención.
+El análisis priorizó Recall bajo la hipótesis de que perder un cliente en riesgo puede ser más costoso que contactar a un cliente que finalmente permanece. Esa hipótesis aún no se ha cuantificado con costos reales ni capacidad de campaña y debe validarse con el área de negocio.
 
-> “En churn, un falso negativo es más costoso que un falso positivo porque perder un cliente en riesgo representa una pérdida real de ingresos y la oportunidad de intervención.”
+> Hipótesis por validar: en la operación de churn, un falso negativo podría tener un costo mayor que un falso positivo. La magnitud relativa de esos costos no se ha medido en este proyecto.
 
-Esta prioridad de negocio se refleja en la estrategia final del proyecto: detectar tempranamente a los clientes con riesgo real de abandono permite intervenir con campañas de retención más eficaces, reducir la pérdida de ingresos y mejorar la rentabilidad del negocio.
+Las predicciones podrían ayudar a priorizar clientes para una intervención, pero las métricas predictivas no demuestran que las campañas eviten abandonos ni que aumenten la rentabilidad. Ese impacto tendría que medirse mediante una prueba controlada o seguimiento operativo.
 
 ## 10. Reproducibilidad
 

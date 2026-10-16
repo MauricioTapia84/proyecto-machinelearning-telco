@@ -4,13 +4,19 @@ from __future__ import annotations
 
 import math
 from pathlib import Path
+import sys
 
 import joblib
 import pandas as pd
 from sklearn.model_selection import train_test_split
 
-
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+from src.data import deduplicate_customer_profiles
+
+
 RAW_DATA = PROJECT_ROOT / "data" / "raw" / "WA_Fn-UseC_-Telco-Customer-Churn.csv"
 MODEL_PATH = PROJECT_ROOT / "output" / "modelos" / "support_vector_machine_pipeline.joblib"
 
@@ -20,9 +26,12 @@ def prepare_test_data() -> tuple[pd.DataFrame, pd.Series, int, int]:
     total_customers = len(data)
     total_dataset_churn = int((data["Churn"] == "Yes").sum())
 
-    # Match the EDA notebook: remove the identifier and exact duplicate rows
-    # before creating the stratified train/test split.
-    data = data.drop(columns=["customerID"]).drop_duplicates().reset_index(drop=True)
+    data = deduplicate_customer_profiles(
+        data,
+        id_column="customerID",
+        total_charges_column="TotalCharges",
+        tenure_column="tenure",
+    ).drop(columns=["customerID"])
     _, test = train_test_split(
         data,
         test_size=0.20,

@@ -4,7 +4,10 @@ import csv
 from statistics import median
 from pathlib import Path
 
+import pandas as pd
 from sklearn.model_selection import train_test_split
+
+from src.data import deduplicate_customer_profiles
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 RAW_CSV = PROJECT_ROOT / 'data' / 'raw' / 'WA_Fn-UseC_-Telco-Customer-Churn.csv'
@@ -30,19 +33,14 @@ def write_rows(path: Path, fieldnames: list[str], rows: list[dict[str, str]]) ->
 
 
 def deduplicate_rows(rows: list[dict[str, str]]) -> list[dict[str, str]]:
-    """Remove exact duplicate observations while ignoring the customer ID."""
-    unique_rows: list[dict[str, str]] = []
-    seen: set[tuple[tuple[str, str], ...]] = set()
-    for row in rows:
-        signature = tuple(
-            (key, str(value))
-            for key, value in row.items()
-            if key != 'customerID'
-        )
-        if signature not in seen:
-            seen.add(signature)
-            unique_rows.append(row)
-    return unique_rows
+    """Normalize values and remove repeated profiles, ignoring customer ID."""
+    profiles = deduplicate_customer_profiles(
+        pd.DataFrame(rows),
+        id_column="customerID",
+        total_charges_column="TotalCharges",
+        tenure_column="tenure",
+    )
+    return profiles.astype(object).where(pd.notna(profiles), "").to_dict("records")
 
 
 def split_train_test(rows: list[dict[str, str]], random_seed: int = 42) -> tuple[list[dict[str, str]], list[dict[str, str]]]:
