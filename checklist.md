@@ -35,8 +35,8 @@ Marcar cada punto al revisar el proyecto. Basado en la rúbrica, la transcripci�
 
 06 · Resultados y decisiones
 ☑  Métricas interpretadas, no solo mostradas.
-☐  Conclusiones y recomendaciones vinculadas a los KPIs.
-☐  Explicado cómo se usaría el modelo y qué decisión apoyaría.
+☑  Conclusiones y recomendaciones vinculadas a los KPIs.
+☑  Explicado cómo se usaría el modelo y qué decisión apoyaría.
 
 07 · Entrega y defensa
 ☐  README.md incluye problema, objetivos, KPIs, datos, EDA y CRISP-DM.

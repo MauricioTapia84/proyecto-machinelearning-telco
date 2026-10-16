@@ -26,12 +26,12 @@ Los indicadores se separan entre indicadores de negocio, que describen el tamañ
 | Tipo | KPI o métrica | Definición | Fórmula | Valor obtenido | Meta |
 |---|---|---|---|---:|---|
 | Negocio | Tasa de churn | Proporción de clientes que abandonaron el servicio en el dataset completo. | Clientes con `Churn = Yes` / total de clientes | 1.869 / 7.043 = **26,54%** | No aplica: es la línea base descriptiva del dataset. |
-| Técnica con uso operativo | Recall de churn | Proporción de los clientes que realmente abandonaron que el modelo identificó como casos positivos. | Verdaderos positivos / (verdaderos positivos + falsos negativos) | **77,15%** en test para el SVM seleccionado | No se inventa una meta; se utiliza como criterio de selección porque el proyecto prioriza no dejar casos de churn sin detectar. |
-| Negocio | Captura de churn en el 20% de mayor riesgo | Proporción de todos los abandonos del conjunto de prueba concentrados en el 20% de clientes con mayor probabilidad predicha de churn. | Churn en el 20% superior / total de churn del conjunto de prueba | 191 / 372 = **51,34%** en test | No definida por falta de una meta comercial proporcionada. |
+| Técnica con uso operativo | Recall de churn | Proporción de los clientes que realmente abandonaron que el modelo identificó como casos positivos. | Verdaderos positivos / (verdaderos positivos + falsos negativos) | **80,91%** en test para el SVM seleccionado | No se inventa una meta; se utiliza como criterio de selección porque el proyecto prioriza no dejar casos de churn sin detectar. |
+| Negocio | Captura de churn en el 20% de mayor riesgo | Proporción de todos los abandonos del conjunto de prueba concentrados en el 20% de clientes con mayor probabilidad predicha de churn. | Churn en el 20% superior / total de churn del conjunto de prueba | 194 / 372 = **52,15%** en test | No definida por falta de una meta comercial proporcionada. |
 
 La tasa de churn cuantifica la magnitud inicial del problema. El Recall permite evaluar la capacidad técnica de detectar clientes que efectivamente abandonan. La captura en el 20% superior permitirá responder cuántos abandonos se concentran si el equipo solo puede priorizar una quinta parte de la cartera. Este último indicador no representa una tasa futura de retención: mide únicamente la capacidad de priorización sobre datos históricos de prueba.
 
-El cálculo se puede reproducir con `python scripts/calculate_business_kpis.py`, utilizando el mismo split estratificado y el pipeline SVM persistido en `output/modelos/support_vector_machine_pipeline.joblib`.
+El cálculo se reproduce ejecutando el [notebook de modelado](notebooks/02_Modelado_y_Evaluacion.ipynb), que aplica el split estratificado, selecciona el SVM mediante validación cruzada y calcula los indicadores sobre el conjunto de prueba reservado. El script `scripts/calculate_business_kpis.py` queda como apoyo auxiliar para recalcular los KPI cuando el entorno tenga instaladas sus dependencias.
 
 ### Etapas CRISP-DM y trazabilidad
 
@@ -215,11 +215,13 @@ python main.py
 
 ## 8. Resultados actuales
 
-Se entrenó un pipeline con técnica de preprocesamiento y SVM, obteniendo los siguientes resultados en el conjunto de prueba:
+Se entrenó un pipeline con preprocesamiento, SMOTE y SVM, seleccionado mediante validación cruzada sobre entrenamiento. En el conjunto de prueba se obtuvieron:
 
-- Accuracy: 0.78
-- ROC AUC: 0.8239
-- Recall para churn: 0.71
+- Accuracy: 0.6968
+- ROC AUC: aproximadamente 0.84
+- Recall para churn: 0.8091
+- Precision: 0.4588
+- F1-score: 0.5856
 
 El modelo se guarda en:
 
@@ -227,7 +229,9 @@ El modelo se guarda en:
 models/telco_churn_pipeline.joblib
 ```
 
-Estos resultados son adecuados para una estrategia de priorización comercial, ya que el objetivo principal es detectar clientes en riesgo con mayor sensibilidad antes de que abandonen el servicio.
+Estos resultados apoyan una estrategia de priorización comercial: el Recall permite detectar una proporción alta de los abandonos, mientras que la precisión más baja advierte que se deben gestionar los falsos positivos y definir el umbral con capacidad operativa real.
+
+En una operación, el modelo ordenaría la cartera por probabilidad de churn y apoyaría la decisión de qué clientes priorizar para una revisión preventiva de retención. El equipo podría comenzar por el 20% de mayor riesgo, revisar el contexto del cliente y del segmento, y decidir la acción con supervisión humana. La predicción no determina automáticamente una oferta ni demuestra que una campaña evitará el abandono.
 
 ## 9. Métricas de negocio y ML
 

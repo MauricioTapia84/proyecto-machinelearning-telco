@@ -52,3 +52,11 @@
   - Se compararon las representaciones originales y PCA + K-Means con métricas adecuadas para el desbalance: Recall, precisión, F1 y ROC-AUC.
   - Se seleccionó Originales + Support Vector Machine, con Recall CV de 0,8222, ROC-AUC CV de 0,8417, Recall test de 0,8091 y ROC-AUC test de 0,8397.
   - Se completaron los cuatro subpuntos del punto 05 del checklist.
+
+- #### 3.4. Verificación del punto 06: Resultados y decisiones
+
+  - Se interpretaron las métricas del modelo y la matriz de confusión, relacionando sus aciertos y errores con la prioridad de detectar clientes con riesgo de churn.
+  - Se vincularon explícitamente las conclusiones con los KPIs definidos: tasa de churn de 26,54%, Recall de test de 80,91% y captura de 52,15% en el 20% de mayor riesgo.
+  - Se documentó el flujo de uso operativo: ordenar la cartera por probabilidad de churn, priorizar según la capacidad disponible, revisar el contexto del segmento y mantener supervisión humana.
+  - Se aclaró que el modelo apoya la decisión de a qué clientes realizar una revisión preventiva, pero no determina automáticamente una oferta ni demuestra causalidad sobre la retención.
+  - Se completaron los tres subpuntos del punto 06 del checklist.
