@@ -29,7 +29,7 @@
   - Se verificaron las relaciones entre predictores mediante matriz de correlación y gráficos cruzados de las variables numéricas.
   - Se incorporó un análisis multivariable que combina tipo de contrato, tramo de antigüedad y servicio de internet, con tabla de segmentos y heatmap de tasas de abandono.
   - Se documentaron los principales hallazgos descriptivos y se aclaró que las asociaciones observadas no implican causalidad.
-  - Se agregó `tabulate` a [requirements.txt](requirements.txt) y [environment.yml](environment.yml) para garantizar la ejecución reproducible de las tablas Markdown del notebook.
+  - Se agregó `tabulate` a los manifiestos de dependencias vigentes en esa fecha para garantizar la ejecución de las tablas Markdown del notebook; la especificación actual está centralizada en Conda.
   - Se ejecutó el notebook EDA completo desde cero sin errores, manteniendo el análisis SHAP para la etapa final.
   - Se completaron los seis subpuntos del punto 02 del checklist.
 
@@ -52,6 +52,15 @@
   - Se compararon las representaciones originales y PCA + K-Means con métricas adecuadas para el desbalance: Recall, precisión, F1 y ROC-AUC.
   - Se seleccionó Originales + Support Vector Machine, con Recall CV de 0,8222, ROC-AUC CV de 0,8417, Recall test de 0,8091 y ROC-AUC test de 0,8397.
   - Se completaron los cuatro subpuntos del punto 05 del checklist.
+
+### 16 de octubre de 2026 · Cierre de supuestos operativos y preparación de entrega
+
+- Se documentó una política económica hipotética bajo supuestos explícitos: 250 contactos por 7.043 clientes, 20% de eficacia, 24 meses y costos de contacto de 1%, 5% y 10% de la mediana de `MonthlyCharges`.
+- Se descompuso la pérdida proxy en facturación bruta evitada, costo de contacto, pérdida residual y ahorro estimado frente a no contactar; se aclaró que no equivale a margen ni a efecto causal.
+- Se añadió la evaluación de errores por género, tercera edad, contrato, servicio de internet y antigüedad, con conteos e intervalos Wilson del 95%; es análisis descriptivo post hoc.
+- Se cerró K-Means como herramienta exploratoria/comparativa, sin uso operativo, por silhouette débil (0,0462) y menor Recall CV que predictores originales.
+- Se fijaron versiones directas en `environment.yml`, se generó el lock explícito de Windows x64 y se retiró `requirements.txt` para evitar manifiestos duplicados.
+- Se añadió una guía de ensayo con preguntas y registro por integrante; la práctica real de defensa aún debe completarse.
 
 - #### 3.4. Verificación del punto 06: Resultados y decisiones
 
