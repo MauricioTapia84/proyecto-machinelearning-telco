@@ -6,7 +6,6 @@ import math
 from pathlib import Path
 import sys
 
-import joblib
 import pandas as pd
 from sklearn.model_selection import train_test_split
 
@@ -14,50 +13,39 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from src.data import deduplicate_customer_profiles
-
-
-RAW_DATA = PROJECT_ROOT / "data" / "raw" / "WA_Fn-UseC_-Telco-Customer-Churn.csv"
-MODEL_PATH = PROJECT_ROOT / "output" / "modelos" / "support_vector_machine_pipeline.joblib"
+from src.inference import load_model_artifact, score_customers
+from src.paths import MODEL_PATH, RAW_DATA_PATH
+from src.pipeline import TARGET, prepare_dataset
 
 
 def prepare_test_data() -> tuple[pd.DataFrame, pd.Series, int, int]:
-    data = pd.read_csv(RAW_DATA)
-    total_customers = len(data)
-    total_dataset_churn = int((data["Churn"] == "Yes").sum())
-
-    data = deduplicate_customer_profiles(
-        data,
-        id_column="customerID",
-        total_charges_column="TotalCharges",
-        tenure_column="tenure",
-    ).drop(columns=["customerID"])
+    raw_data = pd.read_csv(RAW_DATA_PATH)
+    total_customers = len(raw_data)
+    total_dataset_churn = int((raw_data[TARGET] == "Yes").sum())
+    data = prepare_dataset(raw_data)
     _, test = train_test_split(
         data,
         test_size=0.20,
         random_state=42,
-        stratify=data["Churn"],
+        stratify=data[TARGET],
     )
 
-    target = test.pop("Churn").map({"No": 0, "Yes": 1}).astype(int)
-    test["TotalCharges"] = pd.to_numeric(test["TotalCharges"], errors="coerce")
-    zero_tenure = test["TotalCharges"].isna() & test["tenure"].eq(0)
-    test.loc[zero_tenure, "TotalCharges"] = 0.0
-    test["TotalCharges"] = test["TotalCharges"].fillna(test["TotalCharges"].median())
+    target = test.pop(TARGET).map({"No": 0, "Yes": 1}).astype(int)
     return test, target, total_customers, total_dataset_churn
 
 
 def main() -> None:
     test, target, total_customers, total_dataset_churn = prepare_test_data()
-    model = joblib.load(MODEL_PATH)
-    probabilities = model.predict_proba(test)[:, 1]
-    predictions = model.predict(test)
+    artifact = load_model_artifact(MODEL_PATH)
+    predictions = score_customers(artifact, test)
 
     total_churn = int(target.sum())
-    true_positives = int(((predictions == 1) & (target == 1)).sum())
+    true_positives = int(((predictions["prediction"] == 1) & (target == 1)).sum())
     top_count = math.ceil(len(test) * 0.20)
-    ranked = pd.DataFrame({"target": target.to_numpy(), "probability": probabilities})
-    top_risk = ranked.sort_values("probability", ascending=False).head(top_count)
+    ranked = pd.DataFrame(
+        {"target": target.to_numpy(), "score": predictions["score"].to_numpy()}
+    )
+    top_risk = ranked.sort_values("score", ascending=False).head(top_count)
     captured_churn = int(top_risk["target"].sum())
 
     print(f"Tasa de churn dataset completo: {total_dataset_churn / total_customers:.4%}")
@@ -67,6 +55,10 @@ def main() -> None:
         f"{captured_churn}/{total_churn} = {captured_churn / total_churn:.4%}"
     )
     print(f"Clientes test: {len(test)}; clientes priorizados: {top_count}")
+    print(
+        "El 20% superior es un escenario de capacidad ilustrativo; "
+        "el score no es una probabilidad calibrada."
+    )
 
 
 if __name__ == "__main__":

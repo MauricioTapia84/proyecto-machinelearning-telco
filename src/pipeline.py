@@ -17,7 +17,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, PowerTransformer, StandardScaler
 from sklearn.svm import SVC
 
-from src.data import deduplicate_customer_profiles
+from src.data import EMPTY_VALUES, deduplicate_customer_profiles
 
 TARGET = 'Churn'
 
@@ -74,7 +74,13 @@ class TelcoFeatureEngineer(BaseEstimator, TransformerMixin):
 
         text_columns = data.select_dtypes(include=['object', 'category', 'string']).columns
         for column in text_columns:
-            data[column] = data[column].replace(r'^\s*$', np.nan, regex=True)
+            data[column] = data[column].astype(object).map(
+                lambda value: (
+                    np.nan
+                    if pd.isna(value) or str(value).strip().casefold() in EMPTY_VALUES
+                    else str(value).strip()
+                )
+            )
 
         return data
 
@@ -179,7 +185,6 @@ def build_pipeline(
 ) -> ImblearnPipeline:
     """Build the notebook-aligned cleaning, preprocessing, SMOTE, and SVM pipeline."""
     model = classifier or SVC(
-        probability=True,
         class_weight='balanced',
         random_state=random_state,
     )
