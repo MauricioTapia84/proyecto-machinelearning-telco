@@ -10,7 +10,11 @@ from src.data import deduplicate_customer_profiles
 from src.decision import calculate_policy_economics, select_operating_threshold
 from src.inference import load_model_artifact, score_customers
 from src.group_metrics import calculate_group_metrics
-from src.modeling import generate_oof_scores, save_model_artifact
+from src.modeling import (
+    generate_oof_scores,
+    save_model_artifact,
+    select_reduced_features,
+)
 from src.pipeline import (
     PCAKMeansFeatures,
     build_evaluation_pipeline,
@@ -76,6 +80,28 @@ class DeduplicateCustomerProfilesTests(unittest.TestCase):
         self.assertEqual(transformed.shape[0], 40)
         self.assertEqual(transformed.shape[1], transformer.pca_.n_components_ + 2)
         self.assertTrue(np.isfinite(transformed).all())
+
+    def test_reduced_feature_selection_drops_correlated_columns(self) -> None:
+        rng = np.random.default_rng(42)
+        signal = rng.normal(size=60)
+        features = pd.DataFrame({
+            'signal': signal,
+            'signal_duplicate': signal,
+            'noise_a': rng.normal(size=60),
+            'noise_b': rng.normal(size=60),
+        })
+        labels = pd.Series((signal > 0).astype(int))
+
+        result = select_reduced_features(
+            features,
+            labels,
+            correlation_threshold=0.95,
+            n_features_to_select=2,
+        )
+
+        self.assertIn('signal_duplicate', result.dropped_correlated)
+        self.assertEqual(len(result.selected_features), 2)
+        self.assertNotIn('signal_duplicate', result.selected_features)
 
     def test_evaluation_pipeline_fits_preprocessing_inside_pipeline(self) -> None:
         rows = []

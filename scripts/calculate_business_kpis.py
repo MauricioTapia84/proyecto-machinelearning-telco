@@ -7,7 +7,6 @@ from pathlib import Path
 import sys
 
 import pandas as pd
-from sklearn.model_selection import train_test_split
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 if str(PROJECT_ROOT) not in sys.path:
@@ -15,28 +14,27 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from src.inference import load_model_artifact, score_customers
 from src.paths import MODEL_PATH, RAW_DATA_PATH
-from src.pipeline import TARGET, prepare_dataset
+from src.processed_data import load_processed_split
 
 
-def prepare_test_data() -> tuple[pd.DataFrame, pd.Series, int, int]:
+def prepare_test_data(
+    representation: str,
+) -> tuple[pd.DataFrame, pd.Series, int, int]:
     raw_data = pd.read_csv(RAW_DATA_PATH)
     total_customers = len(raw_data)
-    total_dataset_churn = int((raw_data[TARGET] == "Yes").sum())
-    data = prepare_dataset(raw_data)
-    _, test = train_test_split(
-        data,
-        test_size=0.20,
-        random_state=42,
-        stratify=data[TARGET],
+    total_dataset_churn = int((raw_data["Churn"] == "Yes").sum())
+    test, target = load_processed_split(
+        'test', representation=representation,
     )
-
-    target = test.pop(TARGET).map({"No": 0, "Yes": 1}).astype(int)
     return test, target, total_customers, total_dataset_churn
 
 
 def main() -> None:
-    test, target, total_customers, total_dataset_churn = prepare_test_data()
     artifact = load_model_artifact(MODEL_PATH)
+    representation = str(artifact['metadata'].get('representation', 'original'))
+    test, target, total_customers, total_dataset_churn = prepare_test_data(
+        representation,
+    )
     predictions = score_customers(artifact, test)
 
     total_churn = int(target.sum())

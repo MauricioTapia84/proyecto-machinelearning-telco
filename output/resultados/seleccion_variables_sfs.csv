@@ -1,0 +1,11 @@
+feature,mean_no_churn,mean_churn,mean_difference_abs,q1_no_churn,q3_no_churn,q1_churn,q3_churn,mean_no_outside_churn_iqr,mean_churn_outside_no_churn_iqr,selected_by_sfs,removed_by_correlation
+standard__tenure,0.2128488136953379,-0.585796334285098,0.798645147980436,-0.720747165634007,1.158901731685687,-1.2519522887895729,-0.107818177377585,True,False,True,False
+power__TotalCharges,0.1412451412357048,-0.3887307828263891,0.5299759240620939,-0.5703703472296423,0.9826859556332941,-1.2851542514738732,0.424650229582214,False,False,True,False
+categorical__Contract_Month-to-month,0.4286407766990291,0.8837675350701403,0.45512675837111116,0.0,1.0,1.0,1.0,True,False,True,False
+categorical__InternetService_Fiber optic,0.3553398058252427,0.6947227788911156,0.33938297306587284,0.0,1.0,0.0,1.0,False,False,True,False
+categorical__PaymentMethod_Electronic check,0.24975728155339805,0.5804943219772879,0.33073704042388985,0.0,0.0,0.0,1.0,False,True,True,False
+categorical__PaperlessBilling_No,0.4633495145631068,0.24382097528390115,0.21952853927920565,0.0,1.0,0.0,0.0,True,False,True,False
+categorical__InternetService_No,0.2662621359223301,0.058784235136940546,0.20747790078538958,0.0,1.0,0.0,0.0,True,False,True,False
+categorical__StreamingTV_No,0.36577669902912624,0.5003340013360054,0.13455730230687912,0.0,1.0,0.0,1.0,False,False,True,False
+categorical__StreamingMovies_No,0.36310679611650487,0.4956579826319305,0.13255118651542563,0.0,1.0,0.0,1.0,False,False,True,False
+categorical__MultipleLines_No,0.48689320388349516,0.45490981963927857,0.031983384244216595,0.0,1.0,0.0,1.0,False,False,True,False

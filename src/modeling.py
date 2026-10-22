@@ -13,15 +13,18 @@ import pandas as pd
 from sklearn.base import clone
 from sklearn.dummy import DummyClassifier
 from sklearn.ensemble import GradientBoostingClassifier, RandomForestClassifier
-from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import make_scorer, precision_score
+from sklearn.feature_selection import SequentialFeatureSelector
+from sklearn.linear_model import LinearRegression, LogisticRegression
+from sklearn.metrics import make_scorer, mean_squared_error, precision_score
 from sklearn.model_selection import StratifiedKFold, cross_val_predict, cross_validate
 from sklearn.svm import SVC
 
 from src.paths import MODEL_PATH
-from src.pipeline import build_evaluation_pipeline
+from src.pipeline import build_evaluation_pipeline, build_processed_evaluation_pipeline
 
 RANDOM_STATE = 42
+CORRELATION_THRESHOLD = 0.95
+REDUCED_FEATURE_COUNT = 10
 SCORING = {
     'recall': 'recall',
     'roc_auc': 'roc_auc',
@@ -45,10 +48,127 @@ class ModelSelection:
     optuna_best_roc_auc: float
 
 
+@dataclass
+class FeatureSelectionResult:
+    """Training-only diagnostics and selected transformed feature columns."""
+
+    correlation_matrix: pd.DataFrame
+    dropped_correlated: list[str]
+    remaining_features: list[str]
+    selected_features: list[str]
+    selector: SequentialFeatureSelector
+    estimator_name: str
+
+
+def identify_highly_correlated_features(
+    X_train: pd.DataFrame,
+    *,
+    threshold: float = CORRELATION_THRESHOLD,
+) -> tuple[pd.DataFrame, list[str]]:
+    """Return the train-only correlation matrix and redundant columns to drop."""
+    if not 0 < threshold < 1:
+        raise ValueError('threshold debe estar entre 0 y 1.')
+    if not isinstance(X_train, pd.DataFrame) or X_train.empty:
+        raise ValueError('X_train debe ser un DataFrame no vacío.')
+    if not all(pd.api.types.is_numeric_dtype(dtype) for dtype in X_train.dtypes):
+        raise TypeError('La selección requiere una matriz numérica ya transformada.')
+
+    correlation_matrix = X_train.corr().abs()
+    upper = correlation_matrix.where(
+        np.triu(np.ones(correlation_matrix.shape), k=1).astype(bool),
+    )
+    dropped = [
+        column for column in upper.columns
+        if bool((upper[column] > threshold).any())
+    ]
+    return correlation_matrix, dropped
+
+
+def select_reduced_features(
+    X_train: pd.DataFrame,
+    y_train: pd.Series,
+    *,
+    correlation_threshold: float = CORRELATION_THRESHOLD,
+    n_features_to_select: int = REDUCED_FEATURE_COUNT,
+    scoring: str | None = None,
+    selection_estimator: str = 'linear_regression',
+    random_state: int = RANDOM_STATE,
+    cv_splits: int = 5,
+) -> FeatureSelectionResult:
+    """Filter redundant columns and select a compact subset with forward SFS.
+
+    ``LinearRegression`` is used by default as the requested simple linear
+    screening model. Since ``Churn`` is binary, it is not used as the final
+    classifier; the final model remains a classifier selected separately.
+    ``LogisticRegression`` is available as a classification-oriented alternative.
+    """
+    correlation_matrix, dropped = identify_highly_correlated_features(
+        X_train,
+        threshold=correlation_threshold,
+    )
+    reduced = X_train.drop(columns=dropped)
+    if not 1 <= n_features_to_select <= reduced.shape[1]:
+        raise ValueError(
+            'n_features_to_select debe estar entre 1 y las columnas restantes '
+            f'({reduced.shape[1]}).'
+        )
+    if y_train.nunique() != 2:
+        raise ValueError('y_train debe contener exactamente dos clases.')
+
+    if selection_estimator == 'linear_regression':
+        estimator: Any = LinearRegression()
+        selector_scoring: Any = make_scorer(
+            mean_squared_error,
+            greater_is_better=False,
+        ) if scoring is None else scoring
+        estimator_name = 'LinearRegression (filtro lineal de predictores)'
+    elif selection_estimator == 'logistic_regression':
+        estimator = LogisticRegression(
+            C=1.0,
+            solver='liblinear',
+            class_weight='balanced',
+            max_iter=1000,
+            random_state=random_state,
+        )
+        selector_scoring = 'roc_auc' if scoring is None else scoring
+        estimator_name = 'LogisticRegression (modelo lineal para clasificación)'
+    else:
+        raise ValueError(
+            'selection_estimator debe ser linear_regression o '
+            'logistic_regression.'
+        )
+    cv = StratifiedKFold(
+        n_splits=cv_splits,
+        shuffle=True,
+        random_state=random_state,
+    )
+    selector = SequentialFeatureSelector(
+        estimator=estimator,
+        direction='forward',
+        scoring=selector_scoring,
+        cv=cv,
+        n_features_to_select=n_features_to_select,
+        n_jobs=1,
+    )
+    selector.fit(reduced, y_train)
+    selected_features = reduced.columns[selector.get_support()].tolist()
+    return FeatureSelectionResult(
+        correlation_matrix=correlation_matrix,
+        dropped_correlated=dropped,
+        remaining_features=reduced.columns.tolist(),
+        selected_features=selected_features,
+        selector=selector,
+        estimator_name=estimator_name,
+    )
+
+
 def select_model(
     X_train: pd.DataFrame,
     y_train: pd.Series,
     *,
+    X_train_pca_kmeans: pd.DataFrame | None = None,
+    data_is_processed: bool = False,
+    include_pca_kmeans: bool = True,
     random_state: int = RANDOM_STATE,
     n_trials: int = 5,
     timeout: int = 240,
@@ -62,49 +182,88 @@ def select_model(
         'Regresión logística': (
             LogisticRegression(
                 C=1.0, solver='liblinear', max_iter=1000,
+                class_weight='balanced',
                 random_state=random_state,
             ),
             'original',
-            True,
+            False,
         ),
         'Random Forest': (
             RandomForestClassifier(
-                n_estimators=100, max_depth=5, random_state=random_state, n_jobs=1,
+                n_estimators=100, max_depth=5, class_weight='balanced',
+                random_state=random_state, n_jobs=1,
             ),
             'original',
-            True,
+            False,
         ),
         'Gradient Boosting': (
             GradientBoostingClassifier(
                 n_estimators=100, learning_rate=0.05, random_state=random_state,
             ),
             'original',
-            True,
+            False,
         ),
         'SVM lineal': (
-            SVC(C=1.0, kernel='linear', random_state=random_state),
+            SVC(
+                C=1.0, kernel='linear', class_weight='balanced',
+                random_state=random_state,
+            ),
             'original',
-            True,
-        ),
-        'SVM lineal + PCA/K-Means': (
-            SVC(C=1.0, kernel='linear', random_state=random_state),
-            'pca_kmeans',
-            True,
+            False,
         ),
     }
+    if include_pca_kmeans:
+        model_specs['SVM lineal + PCA/K-Means'] = (
+            SVC(
+                C=1.0, kernel='linear', class_weight='balanced',
+                random_state=random_state,
+            ),
+            'pca_kmeans',
+            False,
+        )
 
-    records: dict[str, dict[str, float | str]] = {}
-    for name, (classifier, representation, use_smote) in model_specs.items():
-        pipeline = build_evaluation_pipeline(
-            X_train,
+    def features_for(representation: str) -> pd.DataFrame:
+        if representation == 'pca_kmeans':
+            if X_train_pca_kmeans is None:
+                raise ValueError(
+                    'Faltan las matrices train/X_pca_kmeans.csv para esta representación.'
+                )
+            return X_train_pca_kmeans
+        return X_train
+
+    def build_candidate(
+        features: pd.DataFrame,
+        classifier: Any,
+        *,
+        representation: str,
+        use_smote: bool,
+    ) -> Any:
+        if data_is_processed:
+            return build_processed_evaluation_pipeline(
+                classifier,
+                use_smote=use_smote,
+                random_state=random_state,
+            )
+        return build_evaluation_pipeline(
+            features,
             classifier,
             representation=representation,
             use_smote=use_smote,
             random_state=random_state,
         )
+
+    records: dict[str, dict[str, float | str]] = {}
+    for name, (classifier, representation, use_smote) in model_specs.items():
+        features = features_for(representation)
+        pipeline = build_candidate(
+            features,
+            classifier,
+            representation=representation,
+            use_smote=use_smote,
+        )
         scores = cross_validate(
             pipeline,
-            X_train,
+            features,
             y_train,
             cv=cv,
             scoring=SCORING,
@@ -121,7 +280,8 @@ def select_model(
         records[name] = row
 
     cv_results = pd.DataFrame.from_dict(records, orient='index')
-    svm_names = ['SVM lineal', 'SVM lineal + PCA/K-Means']
+    svm_names = [name for name in ['SVM lineal', 'SVM lineal + PCA/K-Means']
+                 if name in cv_results.index]
     base_svm_name = cv_results.loc[svm_names, 'recall_media'].idxmax()
     selected_representation = str(model_specs[base_svm_name][1])
     search_cv = StratifiedKFold(
@@ -133,21 +293,19 @@ def select_model(
         classifier = SVC(
             C=trial.suggest_float('C', 0.03, 3.0, log=True),
             kernel='linear',
-            class_weight=trial.suggest_categorical(
-                'class_weight', [None, 'balanced'],
-            ),
+            class_weight='balanced',
             random_state=random_state,
         )
-        candidate = build_evaluation_pipeline(
-            X_train,
+        features = features_for(selected_representation)
+        candidate = build_candidate(
+            features,
             classifier,
             representation=selected_representation,
-            use_smote=True,
-            random_state=random_state,
+            use_smote=False,
         )
         scores = cross_validate(
             candidate,
-            X_train,
+            features,
             y_train,
             cv=search_cv,
             scoring={'recall': 'recall', 'roc_auc': 'roc_auc'},
@@ -176,18 +334,19 @@ def select_model(
     tuned_classifier = SVC(
         **best_params,
         kernel='linear',
+        class_weight='balanced',
         random_state=random_state,
     )
-    tuned_pipeline = build_evaluation_pipeline(
-        X_train,
+    tuned_features = features_for(selected_representation)
+    tuned_pipeline = build_candidate(
+        tuned_features,
         tuned_classifier,
         representation=selected_representation,
-        use_smote=True,
-        random_state=random_state,
+        use_smote=False,
     )
     tuned_scores = cross_validate(
         tuned_pipeline,
-        X_train,
+        tuned_features,
         y_train,
         cv=cv,
         scoring=SCORING,
@@ -205,7 +364,7 @@ def select_model(
     tuned_row['fit_seconds_media'] = float(tuned_scores['fit_time'].mean())
     tuned_name = 'SVM ajustado (Optuna)'
     cv_results.loc[tuned_name] = tuned_row
-    model_specs[tuned_name] = (tuned_classifier, selected_representation, True)
+    model_specs[tuned_name] = (tuned_classifier, selected_representation, False)
 
     selected_name = str(
         cv_results.sort_values(
@@ -233,6 +392,7 @@ def generate_oof_scores(
     *,
     representation: str = 'original',
     use_smote: bool = True,
+    data_is_processed: bool = False,
     random_state: int = RANDOM_STATE,
     n_splits: int = 5,
 ) -> np.ndarray:
@@ -245,13 +405,20 @@ def generate_oof_scores(
         shuffle=True,
         random_state=random_state,
     )
-    pipeline = build_evaluation_pipeline(
-        X_train,
-        classifier,
-        representation=representation,
-        use_smote=use_smote,
-        random_state=random_state,
-    )
+    if data_is_processed:
+        pipeline = build_processed_evaluation_pipeline(
+            classifier,
+            use_smote=use_smote,
+            random_state=random_state,
+        )
+    else:
+        pipeline = build_evaluation_pipeline(
+            X_train,
+            classifier,
+            representation=representation,
+            use_smote=use_smote,
+            random_state=random_state,
+        )
     method = (
         'decision_function'
         if hasattr(classifier, 'decision_function')

@@ -7,7 +7,6 @@ import sys
 
 import numpy as np
 import pandas as pd
-from sklearn.model_selection import train_test_split
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 if str(PROJECT_ROOT) not in sys.path:
@@ -22,7 +21,7 @@ from src.paths import (
     RAW_DATA_PATH,
     RESULTS_DIR,
 )
-from src.pipeline import TARGET, prepare_dataset
+from src.processed_data import load_processed_split
 
 ELIGIBLE_COHORT_SIZE = 7043
 CONTACT_CAPACITY = 250
@@ -32,16 +31,8 @@ CONTACT_COST_RATIOS = (0.01, 0.05, 0.10)
 
 
 def main() -> None:
-    raw_data = pd.read_csv(RAW_DATA_PATH)
-    data = prepare_dataset(raw_data)
-    X = data.drop(columns=[TARGET])
-    y = data[TARGET].map({"No": 0, "Yes": 1}).astype(int)
-    X_train, X_test, y_train, y_test = train_test_split(
-        X,
-        y,
-        test_size=0.20,
-        random_state=RANDOM_STATE,
-        stratify=y,
+    X_train, y_train = load_processed_split(
+        'train', representation='original',
     )
 
     artifact = load_model_artifact(MODEL_PATH)
@@ -57,12 +48,17 @@ def main() -> None:
         classifier,
         representation=metadata["representation"],
         use_smote=metadata["uses_smote"],
+        data_is_processed=True,
         random_state=RANDOM_STATE,
+    )
+    X_test, y_test = load_processed_split(
+        'test', representation=metadata['representation'],
     )
     test_scores = np.asarray(pipeline.decision_function(X_test), dtype=float)
 
+    raw_data = pd.read_csv(RAW_DATA_PATH)
     median_monthly_charge = float(
-        pd.to_numeric(data["MonthlyCharges"], errors="raise").median()
+        pd.to_numeric(raw_data["MonthlyCharges"], errors="raise").median()
     )
     capacity_rate = CONTACT_CAPACITY / ELIGIBLE_COHORT_SIZE
     oof_capacity = max(1, round(len(X_train) * capacity_rate))

@@ -110,14 +110,26 @@ def build_preprocessor(X: pd.DataFrame) -> ColumnTransformer:
     numeric_columns = X.select_dtypes(include=np.number).columns.tolist()
     categorical_columns = X.select_dtypes(exclude=np.number).columns.tolist()
 
-    power_columns = [
-        column for column in ['tenure', 'MonthlyCharges', 'TotalCharges']
+    # Only TotalCharges has enough positive skew to justify a power transform.
+    # tenure is a count and MonthlyCharges is approximately symmetric, so both
+    # are kept on their original scale and standardized for distance/margin-based
+    # models. SeniorCitizen is binary categorical despite arriving as 0/1.
+    power_columns = [column for column in ['TotalCharges'] if column in numeric_columns]
+    standard_columns = [
+        column for column in ['tenure', 'MonthlyCharges']
         if column in numeric_columns
     ]
-    standard_columns = [column for column in ['SeniorCitizen'] if column in numeric_columns]
+    binary_categorical_columns = [
+        column for column in ['SeniorCitizen']
+        if column in numeric_columns
+    ]
     remaining_numeric = [
         column for column in numeric_columns
-        if column not in power_columns and column not in standard_columns
+        if (
+            column not in power_columns
+            and column not in standard_columns
+            and column not in binary_categorical_columns
+        )
     ]
 
     transformers = []
@@ -138,6 +150,13 @@ def build_preprocessor(X: pd.DataFrame) -> ColumnTransformer:
     if remaining_numeric:
         transformers.append(
             ('numeric', SimpleImputer(strategy='median'), remaining_numeric)
+        )
+    if binary_categorical_columns:
+        transformers.append(
+            ('binary_categorical', Pipeline([
+                ('imputer', SimpleImputer(strategy='most_frequent')),
+                ('encoder', OneHotEncoder(handle_unknown='ignore')),
+            ]), binary_categorical_columns)
         )
     if categorical_columns:
         transformers.append(
@@ -172,6 +191,26 @@ def build_evaluation_pipeline(
     elif representation != 'original':
         raise ValueError(f'Unsupported representation: {representation}')
 
+    if use_smote:
+        steps.append(('smote', SMOTE(random_state=random_state)))
+    steps.append(('classifier', clone(classifier)))
+    return ImblearnPipeline(steps)
+
+
+def build_processed_evaluation_pipeline(
+    classifier: Any,
+    *,
+    use_smote: bool = False,
+    random_state: int = 42,
+) -> ImblearnPipeline:
+    """Build a model pipeline for matrices already transformed from train.
+
+    The input matrices must come from ``src.processed_data``. No cleaner,
+    imputer, scaler, encoder, PCA, or K-Means step is fitted here because those
+    transformations were already fitted on the training partition when the
+    processed CSVs were generated.
+    """
+    steps: list[tuple[str, Any]] = []
     if use_smote:
         steps.append(('smote', SMOTE(random_state=random_state)))
     steps.append(('classifier', clone(classifier)))
