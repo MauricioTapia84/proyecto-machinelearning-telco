@@ -8,6 +8,7 @@ import sys
 
 os.environ.setdefault('OMP_NUM_THREADS', '1')
 
+import pandas as pd
 from sklearn.base import clone
 from sklearn.metrics import classification_report, roc_auc_score
 
@@ -15,10 +16,12 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
+from src.decision import compute_default_operating_threshold
 from src.modeling import (
     CORRELATION_THRESHOLD,
     RANDOM_STATE,
     REDUCED_FEATURE_COUNT,
+    generate_oof_scores,
     save_model_artifact,
     select_model,
     select_reduced_features,
@@ -71,6 +74,30 @@ def main() -> None:
         if score_method == 'decision_function'
         else pipeline.predict_proba(X_test)[:, 1]
     )
+    oof_scores = generate_oof_scores(
+        X_train_reduced,
+        y_train,
+        clone(selection.selected_classifier),
+        representation=selection.selected_representation,
+        use_smote=selection.selected_smote,
+        data_is_processed=True,
+        random_state=RANDOM_STATE,
+    )
+    raw_data_path = PROJECT_ROOT / 'data' / 'raw' / 'train' / 'WA_Fn-UseC_-Telco-Customer-Churn_train.csv'
+    raw_train = pd.read_csv(raw_data_path)
+    median_monthly_charge = float(
+        pd.to_numeric(raw_train['MonthlyCharges'], errors='coerce').median()
+    )
+    operating_policy = compute_default_operating_threshold(
+        y_train,
+        oof_scores,
+        capacity=max(1, round(len(y_train) * (250 / 7043))),
+        monthly_charge=median_monthly_charge,
+        contact_cost_ratio=0.05,
+        churn_horizon_months=24,
+        retention_effectiveness=0.20,
+        retained_value=0.0,
+    )
     print(selection.cv_results.sort_values(
         ['recall_media', 'roc_auc_media'], ascending=False,
     ).round(4))
@@ -103,7 +130,15 @@ def main() -> None:
         'correlated_features_removed': feature_selection.dropped_correlated,
         'selected_feature_count': len(feature_selection.selected_features),
         'score_method': score_method,
-        'operating_threshold': None,
+        'operating_threshold': float(operating_policy['threshold']),
+        'operating_policy': {
+            'capacity': int(operating_policy['contacts']),
+            'contact_cost_ratio': 0.05,
+            'contact_cost_proxy': float(median_monthly_charge * 0.05),
+            'churn_loss_proxy': float(median_monthly_charge * 24),
+            'retention_effectiveness': 0.20,
+            'retained_value': 0.0,
+        },
         'optuna_best_params': selection.best_params,
         'optuna_best_recall_cv': selection.optuna_best_recall,
         'optuna_best_roc_auc_cv': selection.optuna_best_roc_auc,

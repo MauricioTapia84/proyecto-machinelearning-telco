@@ -6,8 +6,6 @@ from typing import Any
 
 import numpy as np
 import pandas as pd
-from imblearn.over_sampling import SMOTE
-from imblearn.pipeline import Pipeline as ImblearnPipeline
 from sklearn.base import BaseEstimator, TransformerMixin, clone
 from sklearn.cluster import KMeans
 from sklearn.compose import ColumnTransformer
@@ -173,6 +171,18 @@ def build_preprocessor(X: pd.DataFrame) -> ColumnTransformer:
     )
 
 
+def _get_imblearn_pipeline() -> Any:
+    """Import imbalanced-learn lazily to avoid startup crashes on MKL/Windows."""
+    from imblearn.pipeline import Pipeline as ImblearnPipeline
+    return ImblearnPipeline
+
+
+def _get_smote(random_state: int) -> Any:
+    """Import SMOTE lazily so notebook imports do not trigger heavy optional deps."""
+    from imblearn.over_sampling import SMOTE
+    return SMOTE(random_state=random_state)
+
+
 def build_evaluation_pipeline(
     X: pd.DataFrame,
     classifier: Any,
@@ -180,7 +190,7 @@ def build_evaluation_pipeline(
     representation: str = 'original',
     use_smote: bool = True,
     random_state: int = 42,
-) -> ImblearnPipeline:
+) -> Any:
     """Build a fold-safe pipeline for model comparison on raw input features."""
     steps: list[tuple[str, Any]] = [
         ('cleaner', TelcoFeatureEngineer()),
@@ -192,9 +202,9 @@ def build_evaluation_pipeline(
         raise ValueError(f'Unsupported representation: {representation}')
 
     if use_smote:
-        steps.append(('smote', SMOTE(random_state=random_state)))
+        steps.append(('smote', _get_smote(random_state=random_state)))
     steps.append(('classifier', clone(classifier)))
-    return ImblearnPipeline(steps)
+    return _get_imblearn_pipeline()(steps)
 
 
 def build_processed_evaluation_pipeline(
@@ -202,7 +212,7 @@ def build_processed_evaluation_pipeline(
     *,
     use_smote: bool = False,
     random_state: int = 42,
-) -> ImblearnPipeline:
+) -> Any:
     """Build a model pipeline for matrices already transformed from train.
 
     The input matrices must come from ``src.processed_data``. No cleaner,
@@ -212,24 +222,24 @@ def build_processed_evaluation_pipeline(
     """
     steps: list[tuple[str, Any]] = []
     if use_smote:
-        steps.append(('smote', SMOTE(random_state=random_state)))
+        steps.append(('smote', _get_smote(random_state=random_state)))
     steps.append(('classifier', clone(classifier)))
-    return ImblearnPipeline(steps)
+    return _get_imblearn_pipeline()(steps)
 
 
 def build_pipeline(
     X: pd.DataFrame,
     classifier: Any | None = None,
     random_state: int = 42,
-) -> ImblearnPipeline:
+) -> Any:
     """Build the notebook-aligned cleaning, preprocessing, SMOTE, and SVM pipeline."""
     model = classifier or SVC(
         class_weight='balanced',
         random_state=random_state,
     )
-    return ImblearnPipeline([
+    return _get_imblearn_pipeline()([
         ('cleaner', TelcoFeatureEngineer()),
         ('preprocessor', build_preprocessor(clean_data(X))),
-        ('smote', SMOTE(random_state=random_state)),
+        ('smote', _get_smote(random_state=random_state)),
         ('classifier', model),
     ])

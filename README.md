@@ -40,7 +40,7 @@ Los parámetros se ajustan con entrenamiento. El CSV crudo solo se usa para gene
 La generación de datos canónica es:
 
 ```powershell
-conda activate telco-ml
+conda activate telco-ml-2
 python scripts\generate_split.py
 ```
 
@@ -51,7 +51,7 @@ Durante la selección y el entrenamiento, [src/train.py](src/train.py), [src/mod
 ## 5. Flujo completo
 
 ```powershell
-conda activate telco-ml
+conda activate telco-ml-2
 python scripts\generate_split.py
 python scripts\evaluate_reduced_features.py
 python scripts\run_project.py

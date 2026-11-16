@@ -8,6 +8,62 @@ import numpy as np
 from sklearn.metrics import confusion_matrix
 
 
+def compute_default_operating_threshold(
+    y_true: Any,
+    scores: Any,
+    *,
+    capacity: int | None = None,
+    monthly_charge: float | None = None,
+    contact_cost_ratio: float = 0.05,
+    churn_horizon_months: int = 24,
+    retention_effectiveness: float = 0.20,
+    retained_value: float = 0.0,
+) -> dict[str, float | int]:
+    """Derive a cost-aware operating threshold from training-only scores.
+
+    The default assumptions mirror the project business scenarios: a fixed
+    contact capacity, a contact cost proportional to the customer's monthly
+    charge, and a churn-loss proxy equal to the monthly charge over a 24-month
+    horizon.
+    """
+    labels = np.asarray(y_true, dtype=int)
+    risk_scores = np.asarray(scores, dtype=float)
+    if labels.ndim != 1 or risk_scores.ndim != 1 or len(labels) != len(risk_scores):
+        raise ValueError('y_true y scores deben ser vectores de igual longitud.')
+    if not len(labels) or not np.isin(labels, [0, 1]).all():
+        raise ValueError('y_true debe contener etiquetas binarias no vacías.')
+    if not np.isfinite(risk_scores).all():
+        raise ValueError('scores debe contener valores finitos.')
+    if not np.isfinite(contact_cost_ratio) or not 0 <= contact_cost_ratio <= 1:
+        raise ValueError('contact_cost_ratio debe estar entre 0 y 1.')
+    if not np.isfinite(retention_effectiveness) or not 0 <= retention_effectiveness <= 1:
+        raise ValueError('retention_effectiveness debe estar entre 0 y 1.')
+    if not isinstance(churn_horizon_months, int) or churn_horizon_months <= 0:
+        raise ValueError('churn_horizon_months debe ser un entero positivo.')
+
+    if capacity is None:
+        capacity = max(1, int(round(len(labels) * 0.05)))
+    if capacity > len(labels):
+        capacity = len(labels)
+
+    if monthly_charge is None:
+        monthly_charge = float(np.median(np.abs(risk_scores)))
+    if not np.isfinite(monthly_charge) or monthly_charge < 0:
+        raise ValueError('monthly_charge debe ser finito y no negativo.')
+
+    contact_cost = float(monthly_charge * contact_cost_ratio)
+    churn_loss = float(monthly_charge * churn_horizon_months)
+    return select_operating_threshold(
+        labels,
+        risk_scores,
+        capacity=int(capacity),
+        contact_cost=contact_cost,
+        churn_loss=churn_loss,
+        retention_effectiveness=float(retention_effectiveness),
+        retained_value=float(retained_value),
+    )
+
+
 def calculate_policy_economics(
     y_true: Any,
     y_pred: Any,

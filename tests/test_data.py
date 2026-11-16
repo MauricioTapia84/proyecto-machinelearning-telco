@@ -7,7 +7,11 @@ import pandas as pd
 from sklearn.linear_model import LogisticRegression
 
 from src.data import deduplicate_customer_profiles
-from src.decision import calculate_policy_economics, select_operating_threshold
+from src.decision import (
+    calculate_policy_economics,
+    compute_default_operating_threshold,
+    select_operating_threshold,
+)
 from src.inference import load_model_artifact, score_customers
 from src.group_metrics import calculate_group_metrics
 from src.modeling import (
@@ -251,6 +255,23 @@ class DeduplicateCustomerProfilesTests(unittest.TestCase):
         self.assertEqual(result["residual_churn_loss"], 18)
         self.assertEqual(result["expected_net_cost"], 22)
         self.assertEqual(result["net_savings_vs_no_contact"], -2)
+
+    def test_default_operating_threshold_uses_business_assumptions(self) -> None:
+        result = compute_default_operating_threshold(
+            [1, 1, 0, 0, 0, 0, 1, 0],
+            [0.96, 0.90, 0.70, 0.60, 0.20, 0.10, 0.85, 0.30],
+            capacity=2,
+            monthly_charge=100.0,
+            contact_cost_ratio=0.05,
+            churn_horizon_months=24,
+            retention_effectiveness=0.2,
+            retained_value=0.0,
+        )
+
+        self.assertIn('threshold', result)
+        self.assertIn('contacts', result)
+        self.assertLessEqual(result['contacts'], 2)
+        self.assertGreaterEqual(result['threshold'], 0.0)
 
     def test_group_metrics_report_confusion_rates_and_uncertainty(self) -> None:
         groups = pd.DataFrame({

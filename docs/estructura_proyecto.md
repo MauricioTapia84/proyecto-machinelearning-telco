@@ -58,7 +58,7 @@ proyecto/
 Desde la raíz del proyecto:
 
 ```powershell
-conda activate telco-ml
+conda activate telco-ml-2
 python scripts\generate_split.py
 python scripts\evaluate_reduced_features.py
 python scripts\run_project.py

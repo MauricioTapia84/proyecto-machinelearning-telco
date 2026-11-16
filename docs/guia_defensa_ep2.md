@@ -46,7 +46,7 @@ Una limitación honesta: el EDA exploró la cohorte completa. La selección prog
 El flujo canónico parte de los CSV procesados de [data/processed/](../data/processed/), no del CSV crudo durante el modelado:
 
 ```powershell
-conda activate telco-ml
+conda activate telco-ml-2
 python scripts\generate_split.py
 python scripts\evaluate_reduced_features.py
 python scripts\run_project.py
