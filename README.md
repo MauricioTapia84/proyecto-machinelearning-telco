@@ -6,7 +6,7 @@ Proyecto de clasificación supervisada para ordenar clientes según su riesgo hi
 
 La pregunta de negocio es: **¿podemos priorizar clientes con mayor riesgo histórico de churn cuando la capacidad de revisión es limitada?** Se prioriza Recall porque un falso negativo puede ser más costoso que revisar un cliente que finalmente permanece; la relación de costos aún no está cuantificada comercialmente.
 
-El flujo vigente selecciona un **SVM lineal balanceado**, ajustado por Optuna, sin SMOTE. Parte de 46 columnas transformadas, elimina redundancias con un filtro de correlación absoluta mayor que 0,95 y aplica `SequentialFeatureSelector` para conservar 10 columnas. `LinearRegression` se usa únicamente como estimador de screening para SFS.
+El flujo vigente selecciona un **SVM lineal balanceado**, ajustado por Optuna, sin SMOTE. Parte de 46 columnas transformadas, elimina redundancias con un filtro de correlación absoluta mayor que 0,95 y aplica `SequentialFeatureSelector` para conservar 10 columnas. `LogisticRegression` balanceada se usa como estimador estable de screening para SFS; `LinearRegression` permanece disponible solo como opción explícita de compatibilidad.
 
 Resultado actual sobre test:
 
@@ -65,7 +65,32 @@ python scripts\run_project.py
 - [scripts/run_project.py](scripts/run_project.py): entrada oficial para persistir el modelo.
 - [output/modelos/telco_churn_pipeline.joblib](output/modelos/telco_churn_pipeline.joblib): artefacto actual.
 
-El artefacto actual espera la matriz transformada con las columnas seleccionadas; no se debe enviar el CSV crudo directamente. Para producción habría que encapsular y validar también el preprocesamiento de entrada.
+El artefacto actual admite matrices procesadas con las columnas seleccionadas y perfiles raw mediante `src/inference.py`, que aplica la limpieza y el preprocesamiento antes de puntuar. El API valida el contrato de entrada y utiliza el artefacto persistido en `output/modelos/telco_churn_pipeline.joblib`.
+
+## 5.1 Interfaz y despliegue local
+
+La interfaz integrada está disponible en `http://localhost:8000/` y está diseñada como dashboard narrativo para público administrativo y técnico.
+
+- No requiere un identificador de cliente para evaluar el perfil.
+- Incluye ejemplos seleccionables que completan y evalúan los datos automáticamente.
+- Presenta gauge de aproximación, score, umbral operativo, recomendación y métricas históricas.
+- Explica cada resultado sin presentar el score sigmoid como probabilidad calibrada.
+- Es responsive para escritorio, tablet y móvil.
+
+Ejecutar con Docker:
+
+```powershell
+docker compose up --build -d
+docker compose ps
+```
+
+Direcciones verificadas:
+
+- `/`: dashboard español integrado.
+- `/health`: estado del servicio y artefacto cargado.
+- `/predict`: predicción sin `customer_id`.
+- `/docs`: documentación Swagger.
+- `/openapi.json`: contrato OpenAPI.
 
 ## 6. Variables seleccionadas
 
@@ -100,4 +125,4 @@ PCA y K-Means quedan como comparación exploratoria. K-Means no predice churn in
 - [notebooks/01_EDA_y_Limpieza.ipynb](notebooks/01_EDA_y_Limpieza.ipynb): EDA y limpieza.
 - [notebooks/02_Modelado_y_Evaluacion.ipynb](notebooks/02_Modelado_y_Evaluacion.ipynb): selección y evaluación.
 
-El entorno oficial se declara en [environment.yml](environment.yml) y la resolución Windows x64 en [environment-win-64.lock.txt](environment-win-64.lock.txt). La suite vigente contiene 13 pruebas automatizadas; esto no reemplaza validación externa ni un piloto comercial.
+El entorno oficial se declara en [environment.yml](environment.yml) y la resolución Windows x64 en [environment-win-64.lock.txt](environment-win-64.lock.txt). La suite vigente contiene 18 pruebas automatizadas; esto no reemplaza validación externa ni un piloto comercial.

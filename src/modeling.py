@@ -91,16 +91,17 @@ def select_reduced_features(
     correlation_threshold: float = CORRELATION_THRESHOLD,
     n_features_to_select: int = REDUCED_FEATURE_COUNT,
     scoring: str | None = None,
-    selection_estimator: str = 'linear_regression',
+    selection_estimator: str = 'logistic_regression',
     random_state: int = RANDOM_STATE,
     cv_splits: int = 5,
 ) -> FeatureSelectionResult:
     """Filter redundant columns and select a compact subset with forward SFS.
 
-    ``LinearRegression`` is used by default as the requested simple linear
-    screening model. Since ``Churn`` is binary, it is not used as the final
-    classifier; the final model remains a classifier selected separately.
-    ``LogisticRegression`` is available as a classification-oriented alternative.
+    ``LogisticRegression`` is the stable, classification-oriented default
+    screening estimator. It is not the final classifier. Explicit
+    ``LinearRegression`` selection remains available for compatibility with
+    earlier notebooks, but the canonical Windows-safe flow uses balanced
+    LogisticRegression.
     """
     correlation_matrix, dropped = identify_highly_correlated_features(
         X_train,

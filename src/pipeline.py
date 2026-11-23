@@ -223,8 +223,13 @@ def build_processed_evaluation_pipeline(
     steps: list[tuple[str, Any]] = []
     if use_smote:
         steps.append(('smote', _get_smote(random_state=random_state)))
+        steps.append(('classifier', clone(classifier)))
+        return _get_imblearn_pipeline()(steps)
+
+    from sklearn.pipeline import Pipeline
+
     steps.append(('classifier', clone(classifier)))
-    return _get_imblearn_pipeline()(steps)
+    return Pipeline(steps)
 
 
 def build_pipeline(

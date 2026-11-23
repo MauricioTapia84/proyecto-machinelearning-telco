@@ -5,6 +5,5 @@ __pycache__/
 .venv/
 .git/
 .ipynb_checkpoints/
-output/
 notebooks/
 .gitignore

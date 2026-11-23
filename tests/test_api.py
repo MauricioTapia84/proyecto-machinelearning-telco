@@ -13,9 +13,22 @@ def test_health_endpoint() -> None:
     assert payload['status'] == 'ok'
 
 
+def test_root_dashboard_has_no_customer_id_field() -> None:
+    response = client.get('/')
+    assert response.status_code == 200
+    html = response.text
+    assert 'name="customer_id"' not in html
+    assert 'id="gauge"' in html
+    assert 'id="form"' in html
+    assert 'Desempeño histórico del modelo' in html
+    assert 'data-example="stable"' in html
+    assert 'data-example="at-risk"' in html
+    assert 'data-example="new"' in html
+    assert 'data-example="premium"' in html
+
+
 def test_predict_endpoint() -> None:
     payload = {
-        'customer_id': 'CUST-001',
         'gender': 'Female',
         'SeniorCitizen': 0,
         'Partner': 'Yes',
@@ -40,10 +53,12 @@ def test_predict_endpoint() -> None:
     response = client.post('/predict', json=payload)
     assert response.status_code == 200
     body = response.json()
+    assert 'customer_id' not in body
     assert 'predicted_churn' in body
     assert 'risk_score' in body
     assert 'probability_churn' in body
     assert 'probability_percent' in body
+    assert body['probability_method'] == 'sigmoid_approximation'
     assert 'risk_label' in body
     assert 'metrics_context' in body
     assert body['metrics_context']['recall_focus'] == 'prioridad de detección de churn'

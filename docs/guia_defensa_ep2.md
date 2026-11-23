@@ -64,7 +64,7 @@ No se debe decir que el modelo recibe el CSV crudo directamente. El artefacto ca
 
 La matriz inicial tiene 46 columnas transformadas. El filtro de correlación elimina 13 columnas redundantes, principalmente complementos de variables binarias One-Hot. Sobre las restantes se ejecuta SFS en dirección forward con cinco folds estratificados y objetivo fijo de 10 variables.
 
-El estimador de screening es `LinearRegression`, con `neg_mean_squared_error`. Se usa para seleccionar predictores, no como clasificador final: `Churn` es binaria y la decisión final corresponde a un SVM.
+El estimador de screening es `LogisticRegression` con balanceo de clase y `roc_auc`. Se usa para seleccionar predictores, no como clasificador final: el ajuste final corresponde a un SVM balanceado. `LinearRegression` permanece como opción explícita de compatibilidad, pero no es el default canónico.
 
 Las 10 columnas seleccionadas son:
 
@@ -108,7 +108,7 @@ El ranking del SVM usa `decision_function`; no es una probabilidad calibrada. La
 
 **¿Por qué no usar `StandardScaler` directamente sobre `TotalCharges`?** Porque su cola derecha es marcada. Se usa Yeo-Johnson dentro del transformador y luego se estandariza la salida; así se reduce la asimetría sin filtrar información entre particiones.
 
-**¿Por qué se usa `LinearRegression` si el objetivo es churn?** Solo como estimador de screening para SFS, tal como se solicitó. No es el clasificador final; el modelo final es SVM.
+**¿Por qué se usa `LogisticRegression` si el objetivo es churn?** Es el estimador estable de screening para SFS y la métrica de selección es ROC-AUC. No reemplaza al clasificador final; el modelo final es SVM balanceado. `LinearRegression` está disponible solo como alternativa explícita de compatibilidad.
 
 **¿Por qué no SMOTE?** El desbalance se maneja con pesos de clase. Es una alternativa más simple, evita ejemplos sintéticos y obtuvo el desempeño requerido sin tocar test. SMOTE solo sería justificable si una comparación reproducible con CV mostrara una mejora estable.
 
@@ -132,4 +132,4 @@ Antes de presentar, abrir:
 - [modeling.py](../src/modeling.py), para correlación, SFS y elección del modelo.
 - [comparacion_variables_reducidas.csv](../output/resultados/comparacion_variables_reducidas.csv), para los resultados finales.
 
-La suite vigente contiene **13 pruebas automatizadas**. Esto verifica componentes del proyecto; no reemplaza una validación temporal, externa ni un piloto comercial.
+La suite vigente contiene **18 pruebas automatizadas**. Esto verifica componentes del proyecto; no reemplaza una validación temporal, externa ni un piloto comercial.

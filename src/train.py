@@ -10,7 +10,14 @@ os.environ.setdefault('OMP_NUM_THREADS', '1')
 
 import pandas as pd
 from sklearn.base import clone
-from sklearn.metrics import classification_report, roc_auc_score
+from sklearn.metrics import (
+    average_precision_score,
+    classification_report,
+    f1_score,
+    precision_score,
+    recall_score,
+    roc_auc_score,
+)
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 if str(PROJECT_ROOT) not in sys.path:
@@ -130,7 +137,15 @@ def main() -> None:
         'correlated_features_removed': feature_selection.dropped_correlated,
         'selected_feature_count': len(feature_selection.selected_features),
         'score_method': score_method,
+        'probability_calibrated': False,
+        'probability_method': 'sigmoid_approximation',
         'operating_threshold': float(operating_policy['threshold']),
+        'test_accuracy': float((predictions == y_test).mean()),
+        'test_precision': float(precision_score(y_test, predictions, zero_division=0)),
+        'test_recall': float(recall_score(y_test, predictions, zero_division=0)),
+        'test_f1_churn': float(f1_score(y_test, predictions, zero_division=0)),
+        'test_roc_auc': float(roc_auc_score(y_test, scores)),
+        'test_pr_auc': float(average_precision_score(y_test, scores)),
         'operating_policy': {
             'capacity': int(operating_policy['contacts']),
             'contact_cost_ratio': 0.05,
