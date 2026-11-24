@@ -9,7 +9,7 @@ La historia completa tiene siete movimientos:
 1. **Negocio:** perder un cliente en riesgo puede ser más costoso que revisar a un cliente que finalmente permanece; por eso se prioriza Recall.
 2. **Datos:** el dataset tiene 7.043 registros, 19 predictores originales y una etiqueta binaria `Churn`; 1.869 registros son churn (26,54%).
 3. **Evidencia exploratoria:** contratos mes a mes y menor antigüedad aparecen asociados a más churn. `tenure` y `TotalCharges` tienen correlación 0,826, pero esto es asociación, no causalidad.
-4. **Evaluación válida:** se separan 5.617 filas de entrenamiento y 1.408 de test. La selección, la reducción de variables y el ajuste ocurren solo con train.
+4. **Evaluación válida:** se separan 5.617 filas de entrenamiento y 1.409 de test. La selección, la reducción de variables y el ajuste ocurren solo con train.
 5. **Reducción:** las 46 columnas transformadas se filtran por correlación absoluta mayor que 0,95 y luego se aplica `SequentialFeatureSelector`, que conserva 10 columnas.
 6. **Modelo:** se compara una referencia y varios clasificadores. La decisión final es un SVM lineal balanceado, ajustado con Optuna, sin SMOTE.
 7. **Resultado y límite:** el modelo reducido mantiene las métricas de clasificación del modelo completo y pierde solo 0,0028 de ROC-AUC. Es un score de decisión, no una probabilidad calibrada.
@@ -87,22 +87,23 @@ La selección se documenta en [seleccion_variables_sfs.csv](../output/resultados
 
 Se comparan `DummyClassifier`, Regresión Logística, Random Forest, Gradient Boosting y SVM. La prioridad es Recall y ROC-AUC funciona como criterio complementario. No se utiliza SMOTE en el flujo final porque el desbalance se resuelve de forma suficiente y más simple mediante `class_weight='balanced'`; así se evita generar observaciones sintéticas en una matriz con variables One-Hot y no se altera el test.
 
-El modelo final es el **SVM lineal balanceado ajustado por Optuna**, con `C≈0,1683`. Optuna solo explora configuraciones con validación cruzada de train. El artefacto persistido es [telco_churn_pipeline.joblib](../output/modelos/telco_churn_pipeline.joblib).
+El modelo final es el **SVM lineal balanceado ajustado por Optuna**. El artefacto vigente conserva el mejor modelo, umbral provisional y métricas test vigentes en [telco_churn_pipeline.joblib](../output/modelos/telco_churn_pipeline.joblib).
 
 PCA y K-Means quedan como comparación exploratoria, no como parte de la decisión operativa: K-Means agrupa por similitud, no predice churn individual, y una separación débil no justifica usar segmentos como política comercial.
 
-## 5. Resultados que sí deben presentarse
+## 5. Resultados vigentes
 
-El test contiene 1.408 filas y 363 abandonos. La comparación reproducible es:
+El test vigente contiene 1.409 filas y 374 abandonos reales. La matriz vigente al umbral por defecto es `[[733, 302], [64, 310]]`:
 
-| Modelo | Variables | Accuracy | Recall | Precision | F1 | ROC-AUC |
-|---|---:|---:|---:|---:|---:|---:|
-| SVM completo | 46 | 0,7138 | 0,8430 | 0,4693 | 0,6030 | 0,8474 |
-| SVM reducido | 10 | 0,7138 | 0,8430 | 0,4693 | 0,6030 | 0,8445 |
+| Métrica | Resultado vigente |
+|---|---:|
+| Accuracy | 74.02% |
+| Precision churn | 50.65% |
+| Recall churn | 82.89% |
+| F1 churn | 62.88% |
+| ROC-AUC | 85.13% |
 
-La matriz de confusión del modelo reducido es `[[699, 346], [57, 306]]`: detecta 306 de los 363 churn (Recall 84,30%), pero genera 346 falsos positivos. La conclusión correcta es **parquedad sin pérdida relevante en la decisión al umbral por defecto**, no “el modelo predice perfectamente”.
-
-El ranking del SVM usa `decision_function`; no es una probabilidad calibrada. La captura del 20% superior es un indicador descriptivo de priorización histórica, no una tasa de retención ni una promesa de ahorro.
+Detectó 310 abandonos y omitió 64. Los 302 falsos positivos muestran el costo operativo de priorizar Recall.
 
 ## 6. Preguntas de defensa y respuestas breves
 
@@ -112,7 +113,7 @@ El ranking del SVM usa `decision_function`; no es una probabilidad calibrada. La
 
 **¿Por qué no SMOTE?** El desbalance se maneja con pesos de clase. Es una alternativa más simple, evita ejemplos sintéticos y obtuvo el desempeño requerido sin tocar test. SMOTE solo sería justificable si una comparación reproducible con CV mostrara una mejora estable.
 
-**¿Qué significa Recall 0,8430?** Que se detectaron 306 de los 363 abandonos reales del test al umbral del clasificador. Los 57 restantes son falsos negativos; los 346 falsos positivos muestran el costo de priorizar Recall.
+**¿Qué significa Recall 0.8289?** Que se detectaron 310 de los 374 abandonos reales del test al umbral por defecto del clasificador. Los 64 restantes son falsos negativos; los 302 falsos positivos muestran el costo de priorizar Recall.
 
 **¿Se usó test para elegir variables?** No. SFS, el filtro de correlación, la comparación y Optuna usan únicamente train. Test se carga después del ajuste final.
 
@@ -128,7 +129,7 @@ Antes de presentar, abrir:
 
 - [README.md](../README.md), para objetivos, metodología y cifras.
 - [Notebook EDA](../notebooks/01_EDA_y_Limpieza.ipynb), para calidad, distribuciones y boxplots.
-- [Notebook de modelado](../notebooks/02_Modelado_y_Evaluacion.ipynb), para selección y evaluación.
+- [Notebook de modelado](../notebooks/02_Modelado_y_Evaluacion_ejecutado.ipynb), para selección y evaluación.
 - [modeling.py](../src/modeling.py), para correlación, SFS y elección del modelo.
 - [comparacion_variables_reducidas.csv](../output/resultados/comparacion_variables_reducidas.csv), para los resultados finales.
 

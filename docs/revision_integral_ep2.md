@@ -22,8 +22,8 @@ La documentación de defensa y presentación fue actualizada para reflejar esta 
 | Datos | 7.043 filas, 19 predictores originales, 1.869 churn | [01_EDA_y_Limpieza.ipynb](../notebooks/01_EDA_y_Limpieza.ipynb) | Coherente |
 | Calidad | `TotalCharges` textual, 11 espacios, perfiles repetidos controlados en train | [processed_data.py](../src/processed_data.py) | Coherente |
 | Transformación | Yeo-Johnson para `TotalCharges`, StandardScaler para numéricas adecuadas, One-Hot para categorías | [pipeline.py](../src/pipeline.py), [guia_defensa_ep2.md](./guia_defensa_ep2.md) | Coherente |
-| Partición | 5.617 train y 1.408 test; holdout por perfil | [generate_split.py](../scripts/generate_split.py), [split_data.py](../src/split_data.py) | Coherente |
-| Selección | Correlación > 0,95 y SFS con `LinearRegression` como screening | [modeling.py](../src/modeling.py), [seleccion_variables_sfs.csv](../output/resultados/seleccion_variables_sfs.csv) | Coherente |
+| Partición | 5.617 train y 1.409 test; holdout por perfil | [generate_split.py](../scripts/generate_split.py), [processed_data.py](../src/processed_data.py) | Coherente |
+| Selección | Correlación > 0,95 y SFS con `LogisticRegression` balanceada como screening | [modeling.py](../src/modeling.py), [seleccion_variables_sfs.csv](../output/resultados/seleccion_variables_sfs.csv) | Coherente |
 | Balanceo | `class_weight='balanced'`; no SMOTE | [modeling.py](../src/modeling.py), [run_project.py](../scripts/run_project.py) | Coherente |
 | Modelo final | SVM lineal ajustado por Optuna, prioridad Recall | [train.py](../src/train.py), [telco_churn_pipeline.joblib](../output/modelos/telco_churn_pipeline.joblib) | Coherente |
 | Test | Se carga solo después del ajuste final | [train.py](../src/train.py), [evaluate_reduced_features.py](../scripts/evaluate_reduced_features.py) | Coherente |
@@ -34,9 +34,9 @@ La documentación de defensa y presentación fue actualizada para reflejar esta 
 | Modelo | Variables | Accuracy | Recall | Precision | F1 | ROC-AUC |
 |---|---:|---:|---:|---:|---:|---:|
 | SVM completo | 46 | 0,7138 | 0,8430 | 0,4693 | 0,6030 | 0,8474 |
-| SVM reducido | 10 | 0,7138 | 0,8430 | 0,4693 | 0,6030 | 0,8445 |
+| SVM reducido | 10 | 0,7402 | 0,8289 | 0,5065 | 0,6288 | 0,8513 |
 
-La matriz del modelo reducido es `[[699, 346], [57, 306]]`. El test tiene 363 casos churn. Estas métricas son descriptivas del split actual y no prueban impacto causal de una campaña.
+La matriz vigente del modelo reducido es `[[733, 302], [64, 310]]`. El test tiene 374 casos churn. Estas métricas son descriptivas del split actual y no prueban impacto causal de una campaña.
 
 ## Reglas para no romper la coherencia
 
@@ -49,7 +49,7 @@ La matriz del modelo reducido es `[[699, 346], [57, 306]]`. El test tiene 363 ca
 
 ## Validaciones realizadas
 
-- 13 pruebas automatizadas pasan en la configuración local.
+- 20 pruebas automatizadas pasan en la configuración local.
 - Los módulos de `src/`, `scripts/` y `tests/` compilan correctamente.
 - Los notebooks mantienen celdas ejecutables válidas.
 - Los resultados reducidos se guardan en [output/resultados/](../output/resultados/) y el artefacto en [output/modelos/](../output/modelos/).

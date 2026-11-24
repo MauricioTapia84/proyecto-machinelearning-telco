@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+import hashlib
 import joblib
 import numpy as np
 import optuna
@@ -448,14 +450,23 @@ def save_model_artifact(
     metadata: dict[str, Any],
     path: Path = MODEL_PATH,
 ) -> Path:
-    """Persist the complete fitted pipeline and its non-secret metadata."""
+    """Persist the complete fitted pipeline with reproducible artifact identity."""
     path.parent.mkdir(parents=True, exist_ok=True)
-    joblib.dump(
-        {
-            'artifact_version': 1,
-            'pipeline': pipeline,
-            'metadata': metadata,
-        },
-        path,
+
+    enriched_metadata = dict(metadata)
+    enriched_metadata.setdefault(
+        'trained_at',
+        datetime.now(UTC).isoformat(timespec='seconds'),
     )
+    artifact_payload = {
+        'artifact_version': 2,
+        'artifact_schema': 'telco-churn-pipeline-v2',
+        'pipeline': pipeline,
+        'metadata': enriched_metadata,
+    }
+    joblib.dump(artifact_payload, path)
+
+    artifact_hash = hashlib.sha256(path.read_bytes()).hexdigest()
+    identity_path = path.with_suffix('.sha256.txt')
+    identity_path.write_text(f'{artifact_hash}  {path.name}\n', encoding='utf-8')
     return path

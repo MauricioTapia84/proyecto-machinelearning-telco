@@ -77,4 +77,6 @@
   - Se incorporó [docs/presentacion_ep2.md](docs/presentacion_ep2.md) como guion de presentación de 9 minutos y 30 segundos, cubriendo los hallazgos y resultados principales.
   - Se incorporó [docs/guia_defensa_ep2.md](docs/guia_defensa_ep2.md) con preguntas y respuestas para preparar la defensa del proyecto.
   - Se aceptó administrativamente el subpunto de defensa individual sin exigir una verificación formal de cada integrante.
-  - Se mantiene pendiente la ejecución completa desde cero de [notebooks/02_Modelado_y_Evaluacion.ipynb](notebooks/02_Modelado_y_Evaluacion.ipynb), incluyendo la sección SHAP.
+  - Se mantiene pendiente ejecutar desde cero [02_Modelado_y_Evaluacion_ejecutado.ipynb](notebooks/02_Modelado_y_Evaluacion_ejecutado.ipynb) y confirmar que reproduce el artefacto canónico.
+  - Se ejecutó el flujo oficial desde `scripts/run_project.py` con `telco-ml` y se regeneró el artefacto canónico.
+  - Se verificó C=0.1683454924600351, threshold 0.7245316291913046 y test 1409/374.

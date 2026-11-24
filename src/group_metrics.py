@@ -87,6 +87,12 @@ def calculate_group_metrics(
             false_positive_rate = (
                 float(fp / negative_support) if negative_support else float("nan")
             )
+            permanence_recall = (
+                float(tn / negative_support) if negative_support else float("nan")
+            )
+            permanence_precision = (
+                float(tn / (tn + fn)) if (tn + fn) else float("nan")
+            )
             recall_low, recall_high = _wilson_interval(tp, positive_support)
             precision_low, precision_high = _wilson_interval(tp, selected_count)
             fpr_low, fpr_high = _wilson_interval(fp, negative_support)
@@ -117,8 +123,8 @@ def calculate_group_metrics(
                 "precision_ic95_inferior": precision_low,
                 "precision_ic95_superior": precision_high,
                 "tasa_falsos_positivos": false_positive_rate,
-                "fpr_ic95_inferior": fpr_low,
-                "fpr_ic95_superior": fpr_high,
+                "permanencia_recall_especificidad": permanence_recall,
+                "permanencia_precision": permanence_precision,
                 "tasa_seleccion": selected_count / total,
                 "advertencia_soporte": "; ".join(cautions),
             })

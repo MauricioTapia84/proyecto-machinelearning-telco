@@ -1,0 +1,7 @@
+customer_id,group,contacted,retained,observed_churn,contact_cost,customer_value
+C001,treatment,1,1,0,50,700
+C002,treatment,1,0,1,50,700
+C003,treatment,1,1,0,50,700
+C004,control,0,0,1,0,700
+C005,control,0,1,0,0,700
+C006,control,0,0,1,0,700

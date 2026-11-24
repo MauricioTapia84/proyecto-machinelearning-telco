@@ -8,15 +8,15 @@ Este directorio centraliza la metodología, la revisión de coherencia y los mat
 2. Generar las matrices procesadas con `python scripts\generate_split.py`.
 3. Evaluar la reducción de variables con `python scripts\evaluate_reduced_features.py`.
 4. Entrenar, evaluar al final y persistir con `python scripts\run_project.py`.
-5. Revisar [02_Modelado_y_Evaluacion.ipynb](../notebooks/02_Modelado_y_Evaluacion.ipynb) y los artefactos de [output/](../output/).
+5. Revisar [02_Modelado_y_Evaluacion_ejecutado.ipynb](../notebooks/02_Modelado_y_Evaluacion_ejecutado.ipynb) y los artefactos de [output/](../output/).
 
 El flujo canónico parte de `data/processed/`, usa solo train para selección y ajuste, y reserva test para la evaluación final. No utiliza SMOTE: el SVM final usa `class_weight='balanced'`.
 
 ## Archivos principales
 
 - [README.md](../README.md): objetivo, metodología, transformaciones y resultados.
-- [guia_defensa_ep2.md](./guia_defensa_ep2.md): explicación técnica y preguntas de defensa.
-- [presentacion_ep2.md](./presentacion_ep2.md): guion de nueve diapositivas con storytelling.
+- [guia_defensa_ep3.md](./guia_defensa_ep3.md): explicación técnica EP3 y preguntas de defensa.
+- [presentacion_ep3.md](./presentacion_ep3.md): guion EP3 de 10 minutos.
 - [revision_integral_ep2.md](./revision_integral_ep2.md): matriz de coherencia entre etapas.
 - [checklist.md](./checklist.md): revisión de requisitos y pendientes.
 - [estructura_proyecto.md](./estructura_proyecto.md): responsabilidades y flujo de carpetas.
@@ -28,6 +28,6 @@ El flujo canónico parte de `data/processed/`, usa solo train para selección y 
 
 ## Mensaje metodológico
 
-La decisión de transformación depende de la distribución: Yeo-Johnson para `TotalCharges`, `StandardScaler` para numéricas que necesitan escala comparable y One-Hot Encoding para categorías nominales. La selección deja 10 columnas transformadas mediante filtro de correlación y `SequentialFeatureSelector`; `LinearRegression` se utiliza únicamente como screening, no como clasificador.
+La decisión de transformación depende de la distribución: Yeo-Johnson para `TotalCharges`, `StandardScaler` para numéricas que necesitan escala comparable y One-Hot Encoding para categorías nominales. La selección deja 10 columnas transformadas mediante filtro de correlación y `SequentialFeatureSelector`. `LogisticRegression` balanceada es el estimador canónico de screening; `LinearRegression` solo permanece como opción explícita de compatibilidad.
 
 La conclusión vigente es que el SVM lineal balanceado conserva Recall, Precision, F1 y Accuracy del modelo completo en el test actual, con una pérdida de 0,0028 en ROC-AUC. Esto respalda simplificar la representación, pero no prueba causalidad, rentabilidad ni validez fuera de la cohorte observada.

@@ -57,7 +57,7 @@ CSV crudo → split por perfil → train/test transformados
                     test reservado para el final
 ```
 
-- Train: 5.617 filas · Test: 1.408 filas.
+- Train: 5.617 filas · Test: 1.409 filas.
 - El modelado consume `data/processed/`.
 - Sin SMOTE; `class_weight='balanced'` en SVM.
 
@@ -72,12 +72,13 @@ CSV crudo → split por perfil → train/test transformados
 - 46 columnas transformadas iniciales.
 - Filtro `|correlación| > 0,95`: elimina 13 redundantes.
 - `SequentialFeatureSelector`, forward, 5 folds, 10 columnas.
-- `LinearRegression` se usa solo como screening con `neg_mean_squared_error`.
+- `LogisticRegression` balanceada se usa como estimador estable de screening con validación cruzada; no es el clasificador final.
+- `LinearRegression` queda solo como opción explícita de compatibilidad, no como configuración canónica.
 - Boxplots: diagnóstico descriptivo, no selección automática.
 
 **Qué decir**
 
-“Primero quitamos redundancias evidentes en train. Después SFS agrega variables de forma incremental y evalúa cada conjunto con validación cruzada. Usamos `LinearRegression` como estimador de screening porque se solicitó una regresión lineal simple; no lo presentamos como el clasificador de churn. La decisión final continúa siendo supervisada y binaria.”
+“Primero quitamos redundancias evidentes en train. Después SFS agrega variables de forma incremental y evalúa cada conjunto con validación cruzada. Usamos `LogisticRegression` como estimador de screening porque se solicitó una regresión lineal simple; no lo presentamos como el clasificador de churn. La decisión final continúa siendo supervisada y binaria.”
 
 ## Diapositiva 6 · Comparación y elección
 
@@ -86,7 +87,8 @@ CSV crudo → split por perfil → train/test transformados
 - DummyClassifier como referencia.
 - Regresión Logística, Random Forest, Gradient Boosting y SVM.
 - Criterio principal: Recall; desempate: ROC-AUC.
-- Ganador: SVM lineal balanceado, Optuna, `C≈0,1683`.
+- Ganador vigente: SVM lineal balanceado ajustado por Optuna.
+- Última ejecución: test con 1.409 filas, 374 abandonos reales, TP 310, FP 302, FN 64 y TN 733.
 - PCA/K-Means: comparación exploratoria, no política comercial.
 
 **Qué decir**
@@ -102,13 +104,13 @@ CSV crudo → split por perfil → train/test transformados
 | SVM completo | 46 | 0,8430 | 0,4693 | 0,6030 | 0,8474 |
 | SVM reducido | 10 | 0,8430 | 0,4693 | 0,6030 | 0,8445 |
 
-- Matriz reducida: `[[699, 346], [57, 306]]`.
-- 306 de 363 churn detectados.
-- Pérdida de ROC-AUC: 0,0028.
+- Matriz vigente: `[[733, 302], [64, 310]]`.
+- 310 de 374 churn detectados.
+- Accuracy 74.02%, Precision 50.65%, Recall 82.89%, F1 62.88%, ROC-AUC 85.13%.
 
 **Qué decir**
 
-“Reducir de 46 a 10 variables conserva Accuracy, Recall, Precision y F1 en el test, con una pérdida pequeña de ROC-AUC. Por eso la simplificación es defendible: reduce complejidad sin sacrificar la decisión al umbral usado. Aun así, 346 falsos positivos muestran que mejorar Recall tiene un costo operativo.”
+“Reducir de 46 a 10 variables mantiene el Recall de 82.89%, con Precision 50.65%, F1 62.88% y ROC-AUC 85.13% en el test vigente. Aun así, 302 falsos positivos muestran que mejorar Recall tiene un costo operativo.”
 
 ## Diapositiva 8 · Interpretación y límites
 
@@ -146,10 +148,10 @@ Crear una presentación académica de ciencia de datos, sobria y legible, con 9 
 2. **¿Por qué no Accuracy?** Con 26,54% de churn puede ocultar un mal desempeño sobre la clase minoritaria.
 3. **¿Por qué Yeo-Johnson para `TotalCharges`?** Su sesgo derecho es alto y Yeo-Johnson reduce la cola sin exigir positividad estricta.
 4. **¿Por qué no codificar categorías como 0, 1, 2?** Crearía un orden artificial; One-Hot Encoding respeta su naturaleza nominal.
-5. **¿Por qué `LinearRegression`?** Solo como estimador de screening para SFS; el clasificador final es SVM.
+5. **¿Por qué `LogisticRegression`?** Como estimador estable de screening en SFS. `LinearRegression` es solo compatibilidad y el clasificador final es SVM balanceado.
 6. **¿Por qué no SMOTE?** El balanceo por pesos fue suficiente y evita observaciones sintéticas en una matriz con One-Hot.
 7. **¿Se usó test en SFS?** No; SFS, Optuna y la comparación usan train.
-8. **¿Qué significa 0,8430 de Recall?** Se detectaron 306 de 363 abandonos reales del test.
+8. **¿Qué significa 82.89% de Recall?** Se detectaron 310 de 374 abandonos reales del test al umbral por defecto.
 9. **¿Qué significa la precisión 0,4693?** Aproximadamente 47% de los marcados como positivos fueron churn en este punto de operación.
 10. **¿El score es probabilidad?** No; es la salida de decisión del SVM y no está calibrada.
 11. **¿Qué aporta K-Means?** Una comparación no supervisada; no es el mecanismo de predicción ni de contacto.

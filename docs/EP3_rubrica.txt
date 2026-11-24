@@ -1,0 +1,249 @@
+===== PAGE 1 =====
+ 
+ 
+ 2026 
+ 
+ 
+Evaluación Parcial N°3 
+ 
+Presentación y defensa técnica del proyecto | Docente 
+Instrucciones y pauta de evaluación | Estudiante 
+ 
+
+===== PAGE 2 =====
+ 
+Página 1 de 5 
+ 
+ 2026 
+ 
+Evaluación Parcial N°3 
+Encargo con Presentación 
+Instrucciones y pauta de evaluación  
+Estudiante 
+Sigla Nombre Asignatura Tiempo Asignado % Ponderación 
+Semana inicio  
+EFT 
+MLY1101 MACHINE LEARNING 5 h 30%  
+ 
+1.  Instrucciones generales  
+Descripción  
+▪ La evaluación consiste en una actividad grupal con defensa individual, en la que cada grupo debe presentar un informe ejecuti vo que 
+sintetice los aspectos más relevantes del proyecto donde el estudiante debe desarrollar y defender una solución de Machine L earning 
+aplicada a un problema real de negocio, utilizando uno de los casos propuestos por la asignatura: 
+ 
+▪ Caso A: Predicción de abandono de clientes (Telco Customer Churn). 
+▪ Caso B: Predicción de precios de viviendas (Housing Prices). 
+▪ Caso C: Inteligencia musical y predicción de popularidad de canciones (Spotify Tracks). 
+ 
+▪ Durante el desarrollo del proyecto, los estudiantes deberán aplicar las distintas etapas del proceso de ciencia de datos, considerando la 
+comprensión del problema, preparación de datos, análisis exploratorio, construcción de modelos de aprendizaje automático, optimización 
+de hiperparámetros, evaluación de desempeño y comunicación de resultados. La solución desarrollada deberá incorporar, como mínimo, 
+la implementación y comparación de dos modelos de aprendizaje supervisado acordes a la naturaleza del problema de negocio 
+(clasificación o regresión, según corresponda al caso seleccionado), además de una técnica de aprendizaje no supervisado orientada al 
+descubrimiento de patrones, segmentos o agrupaciones relevantes dentro del conjunto de datos 
+
+===== PAGE 3 =====
+ 
+Página 2 de 5 
+ 
+ 2026 
+ 
+▪ El tiempo asignado para desarrollar esta evaluación en la sala de proyectos es de 5 horas y se realiza de manera grupal.  
+▪ Cada estudiante/equipo cuenta con 10 minutos para su presentación 
+▪ Si bien, esta evaluación es posible desarrollarla y rendirla de manera grupal, la presentación será evaluada de manera Individual y estará 
+asociada al desempeño de cada estudiante, ya sea mediante la calidad de su exposición, así como también en las respuestas a las 
+preguntas realizadas por su docente. Por lo anterior, cada estudiante debe estar preparado para responder preguntas cruzadas, es decir, 
+no necesariamente se le realizarán preguntas específicamente de lo que haya presentado individualmente.  
+ 
+Instrucciones específicas de la Evaluación: 
+ 
+La presentación debe incluir los siguientes apartados:  
+▪ Descripción del problema de negocio y objetivos del proyecto. 
+▪ Análisis exploratorio de los datos (EDA), incluyendo identificación de patrones, calidad de datos y variables relevantes. 
+▪ Preparación y transformación de datos para el proceso de modelamiento. 
+▪ Implementación y comparación de modelos de Machine Learning supervisados y/o no supervisados, según corresponda al caso 
+seleccionado. 
+▪ Optimización de hiperparámetros y aplicación de técnicas de validación para mejorar el desempeño de los modelos. 
+▪ Evaluación de resultados mediante métricas apropiadas al problema abordado. 
+▪ Análisis de posibles sesgos, limitaciones y consideraciones éticas asociadas al uso de los datos y modelos desarrollados. 
+▪ Conclusiones y recomendaciones orientadas a la toma de decisiones basada en datos. 
+Modalidad de la evaluación: Presentación de evidencias y defensa técnica del proyecto de Machine Learning. 
+ 
+Los aspectos formales son: 
+Los materiales, herramientas o insumos requeridos para realizar esta evaluación corresponden a un informe técnico en formato Markdown, el 
+cual deberá documentar de manera estructurada todo el desarrollo del proyecto de Machine Learning. 
+Los estudiantes deberán entregar: 
+• Informe técnico en formato Markdown (.md), elaborado como un documento reproducible similar a un README de un proyecto de 
+Machine Learning, que incluya como mínimo las siguientes secciones:  
+o Descripción del problema de negocio.  
+
+===== PAGE 4 =====
+ 
+Página 3 de 5 
+ 
+ 2026 
+o Objetivos del proyecto.  
+o Definición de KPIs que resolverán el problema de negocio. 
+o Descripción de las fuentes de datos utilizadas.  
+o Preparación y análisis exploratorio de los datos (EDA).  
+o Metodología utilizada (CRISP-DM).  
+o Desarrollo de los modelos de aprendizaje automático.  
+o Optimización de hiperparámetros y aplicación de técnicas de ensamble (cuando corresponda).  
+o Evaluación de resultados mediante métricas apropiadas.  
+o Conclusiones, limitaciones y recomendaciones para el negocio.  
+• Notebook en Python (.ipynb) debidamente documentado, organizado y completamente ejecutable, que permita reproducir cada una 
+de las etapas desarrolladas en el informe.  
+• Conjunto de datos y archivos complementarios utilizados durante el desarrollo del proyecto, organizados de manera que permitan 
+ejecutar nuevamente la solución sin modificaciones adicionales.  
+• Carpeta del proyecto organizada siguiendo una estructura profesional (por ejemplo: data/, notebooks/, models/, images/ y 
+README.md), de forma que cualquier usuario pueda comprender, ejecutar y reproducir la solución desarrollada. 
+ 
+ 
+ 
+ 
+ 
+2. Pauta de Evaluación (Rúbrica, Escala de Valoración, Lista de cotejo) 
+Categoría % logro Descripción niveles de logro 
+Muy buen desempeño 100% Demuestra un desempeño destacado, evidenciando el logro de todos los aspectos evaluados en el indicador.  
+Buen desempeño 80% Demuestra un alto desempeño del indicador, presentando pequeñas omisiones, dificultades y/o errores. 
+Desempeño aceptable  60% Demuestra un desempeño competente, evidenciando el logro de los elementos básicos del indicador, pero con omisiones, dificultades o errores. 
+
+===== PAGE 5 =====
+ 
+Página 4 de 5 
+ 
+ 2026 
+Desempeño incipiente  30% Presenta importantes omisiones, dificultades o errores en el desempeño, que no permiten evidenciar los elementos básicos del logro del indicador, por lo que no puede ser considerado competente. 
+Desempeño no logrado 0% Presenta ausencia o incorrecto desempeño. 
+ 
+Indicador de Evaluación 
+Categorías de Respuesta Ponderación 
+Indicador de 
+Evaluación Muy buen desempeño 100% Buen desempeño 80% Desempeño aceptable 60% Desempeño incipiente 30% Desempeño no logrado 0% 
+1. IE9: Optimización de 
+hiperparámetros del modelo 
+Aplica correctamente 
+estrategias de 
+optimización de 
+hiperparámetros que 
+mejoran el rendimiento 
+del modelo y justifica las 
+decisiones adoptadas. 
+Optimiza 
+adecuadamente 
+el modelo, con 
+leves omisiones 
+en la 
+justificación. 
+Aplica 
+estrategias 
+básicas de 
+optimización 
+con resultados 
+limitados. 
+Presenta 
+dificultades 
+importantes en 
+el proceso de 
+optimización. 
+No realiza 
+optimización de 
+hiperparámetros. 
+20% 
+2. IE10: Implementación de 
+técnicas de ensamble 
+Implementa 
+correctamente técnicas de 
+ensamble y demuestra su 
+aporte en la mejora del 
+desempeño del modelo. 
+Implementa 
+técnicas de 
+ensamble 
+adecuadas, con 
+pequeñas 
+omisiones en su 
+análisis. 
+Implementa 
+parcialmente 
+técnicas de 
+ensamble. 
+Presenta 
+dificultades en 
+la 
+implementación 
+de técnicas de 
+ensamble. 
+No implementa 
+técnicas de 
+ensamble. 
+30% 
+3. IE11: Evaluación de la 
+capacidad de generalización 
+del modelo 
+Evalúa correctamente la 
+capacidad de 
+generalización del modelo 
+utilizando validación 
+cruzada y métricas 
+apropiadas para el 
+problema. 
+Evalúa 
+adecuadamente 
+la 
+generalización, 
+con leves 
+omisiones en el 
+análisis. 
+Evalúa 
+parcialmente la 
+generalización 
+del modelo. 
+Presenta 
+dificultades 
+para evaluar la 
+capacidad de 
+generalización. 
+No evalúa la 
+generalización 
+del modelo. 
+20% 
+4. IE12: Selección y justificación 
+de la solución analítica óptima 
+Selecciona y justifica de 
+manera sólida la solución 
+analítica óptima mediante 
+la comparación de 
+modelos, evidenciando su 
+Selecciona 
+adecuadamente 
+la solución, con 
+leves omisiones 
+en la 
+justificación. 
+Selecciona una 
+solución 
+parcialmente 
+fundamentada. 
+La selección 
+presenta 
+debilidades 
+importantes o 
+una justificación 
+insuficiente. 
+No logra 
+seleccionar ni 
+justificar una 
+solución analítica 
+adecuada. 
+30% 
+
+===== PAGE 6 =====
+ 
+Página 5 de 5 
+ 
+ 2026 
+ 
+aporte al cumplimiento de 
+los objetivos del negocio. 
+Total      100% 

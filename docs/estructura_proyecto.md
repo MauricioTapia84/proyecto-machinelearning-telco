@@ -12,7 +12,7 @@ proyecto/
 ├── docs/
 ├── notebooks/
 │   ├── 01_EDA_y_Limpieza.ipynb
-│   └── 02_Modelado_y_Evaluacion.ipynb
+│   └── 02_Modelado_y_Evaluacion_ejecutado.ipynb
 ├── output/
 │   ├── graficos/
 │   ├── modelos/

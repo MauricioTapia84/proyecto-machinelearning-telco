@@ -1,0 +1,2 @@
+pilot_status,treatment_n,control_n,treatment_churn_rate,control_churn_rate,observed_retention_difference,observed_retention_difference_lower_ic95,observed_retention_difference_upper_ic95,retained_customers,total_contact_cost,retained_customer_value,avoided_churn_count,net_savings,threshold_status
+requires_approval,3,3,0.3333333333333333,0.6666666666666666,0.3333333333333333,-0.590602549566452,1.2572692162331185,2,150.0,1400.0,1.0,1250.0,provisional_pending_pilot

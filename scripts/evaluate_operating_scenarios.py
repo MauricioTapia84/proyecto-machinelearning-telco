@@ -54,6 +54,11 @@ def main() -> None:
     X_test, y_test = load_processed_split(
         'test', representation=metadata['representation'],
     )
+    feature_columns = metadata.get("feature_columns")
+    missing = sorted(set(feature_columns or []).difference(X_test.columns))
+    if missing:
+        raise ValueError(f"Faltan columnas requeridas por el artefacto: {missing}")
+    X_test = X_test.reindex(columns=feature_columns)
     test_scores = np.asarray(pipeline.decision_function(X_test), dtype=float)
 
     raw_data = pd.read_csv(RAW_DATA_PATH)

@@ -23,7 +23,10 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from src.decision import compute_default_operating_threshold
+from src.decision import (
+    compute_default_operating_threshold,
+    compute_quantile_operating_threshold,
+)
 from src.modeling import (
     CORRELATION_THRESHOLD,
     RANDOM_STATE,
@@ -95,15 +98,9 @@ def main() -> None:
     median_monthly_charge = float(
         pd.to_numeric(raw_train['MonthlyCharges'], errors='coerce').median()
     )
-    operating_policy = compute_default_operating_threshold(
-        y_train,
+    operating_policy = compute_quantile_operating_threshold(
         oof_scores,
-        capacity=max(1, round(len(y_train) * (250 / 7043))),
-        monthly_charge=median_monthly_charge,
-        contact_cost_ratio=0.05,
-        churn_horizon_months=24,
-        retention_effectiveness=0.20,
-        retained_value=0.0,
+        quantile=0.75,
     )
     print(selection.cv_results.sort_values(
         ['recall_media', 'roc_auc_media'], ascending=False,
@@ -140,6 +137,17 @@ def main() -> None:
         'probability_calibrated': False,
         'probability_method': 'sigmoid_approximation',
         'operating_threshold': float(operating_policy['threshold']),
+        'operating_threshold_status': 'recalibrado OOF; validación externa pendiente',
+        'operating_threshold_method': 'cuantil 75 de scores OOF para priorizar Recall',
+        'test_customers': int(len(y_test)),
+        'test_churn': int(y_test.sum()),
+        'test_true_positive': int(((predictions == 1) & (y_test == 1)).sum()),
+        'test_false_positive': int(((predictions == 1) & (y_test == 0)).sum()),
+        'test_false_negative': int(((predictions == 0) & (y_test == 1)).sum()),
+        'test_true_negative': int(((predictions == 0) & (y_test == 0)).sum()),
+        'test_selected_count': int((scores >= float(operating_policy['threshold'])).sum()),
+        'test_threshold_true_positive': int(((scores >= float(operating_policy['threshold'])) & (y_test == 1)).sum()),
+        'test_threshold_false_positive': int(((scores >= float(operating_policy['threshold'])) & (y_test == 0)).sum()),
         'test_accuracy': float((predictions == y_test).mean()),
         'test_precision': float(precision_score(y_test, predictions, zero_division=0)),
         'test_recall': float(recall_score(y_test, predictions, zero_division=0)),

@@ -1,0 +1,9 @@
+{
+  "action": "continue_monitoring",
+  "reason": "Sin evidencia consecutiva suficiente.",
+  "psi_threshold": 0.2,
+  "variables_alertadas": [],
+  "automatic_retraining": false,
+  "approval_required": true,
+  "consecutive_alert_policy": 2
+}

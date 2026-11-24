@@ -45,14 +45,20 @@ def main() -> None:
     X_test, y_test = load_processed_split(
         'test', representation=metadata.get('representation', 'original'),
     )
-    if list(X_test.columns) != metadata.get("feature_columns"):
+    feature_columns = metadata.get("feature_columns")
+    missing = sorted(set(feature_columns or []).difference(X_test.columns))
+    if missing:
         raise ValueError(
-            "El esquema de datos no coincide con el artefacto; "
-            "no se calcularán métricas por grupo."
+            "Faltan columnas requeridas por el artefacto: "
+            f"{missing}"
         )
+    if feature_columns:
+        X_test = X_test.reindex(columns=feature_columns)
 
     pipeline = artifact["pipeline"]
     predictions = pipeline.predict(X_test)
+    criterio = "predict del clasificador; umbral operativo separado y pendiente de validación"
+
     results = calculate_group_metrics(
         y_test,
         predictions,
@@ -61,7 +67,7 @@ def main() -> None:
         min_class_support=MIN_CLASS_SUPPORT,
     )
     results.insert(0, "modelo", str(metadata["model_name"]))
-    results.insert(1, "criterio_clasificacion", "predict del clasificador; no es umbral operativo")
+    results.insert(1, "criterio_clasificacion", criterio)
 
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
     results.to_csv(GROUP_METRICS_PATH, index=False)

@@ -17,7 +17,7 @@ def load_model_artifact(path: Path = MODEL_PATH) -> dict[str, Any]:
     artifact = joblib.load(path)
     if (
         not isinstance(artifact, dict)
-        or artifact.get('artifact_version') != 1
+        or artifact.get('artifact_version') not in (1, 2)
         or 'pipeline' not in artifact
         or 'metadata' not in artifact
     ):

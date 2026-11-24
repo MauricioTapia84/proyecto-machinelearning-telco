@@ -10,7 +10,9 @@ from src.data import deduplicate_customer_profiles
 from src.decision import (
     calculate_policy_economics,
     compute_default_operating_threshold,
+    compute_quantile_operating_threshold,
     select_operating_threshold,
+    validate_operating_threshold,
 )
 from src.inference import load_model_artifact, score_customers
 from src.group_metrics import calculate_group_metrics
@@ -239,6 +241,28 @@ class DeduplicateCustomerProfilesTests(unittest.TestCase):
         self.assertEqual(result["contacts"], 2)
         self.assertEqual(result["true_positive"], 2)
 
+    def test_quantile_threshold_uses_oof_score_cutoff(self) -> None:
+        result = compute_quantile_operating_threshold(
+            [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0],
+            quantile=0.75,
+        )
+
+        self.assertAlmostEqual(result['threshold'], 0.775)
+        self.assertEqual(result['contacts'], 3)
+        self.assertEqual(result['quantile'], 0.75)
+
+    def test_threshold_validation_reports_contacts_and_false_positive_rate(self) -> None:
+        result = validate_operating_threshold(
+            [1, 1, 0, 0, 1, 0, 0, 0],
+            [1.06, 0.8, 0.2, -0.1, 0.9, 0.4, 0.1, -0.2],
+            0.4,
+        )
+
+        self.assertEqual(result['contacts'], 4)
+        self.assertEqual(result['recall'], 1.0)
+        self.assertEqual(result['precision'], 0.75)
+        self.assertEqual(result['false_positive_rate'], 0.2)
+
     def test_policy_economics_separates_avoided_loss_and_contact_cost(self) -> None:
         result = calculate_policy_economics(
             [1, 1, 0],
@@ -301,6 +325,75 @@ class DeduplicateCustomerProfilesTests(unittest.TestCase):
                 [1, 0],
                 pd.DataFrame({"gender": ["A"]}),
             )
+
+    def test_operating_threshold_requires_pilot_and_calibration(self) -> None:
+        from src.decision import evaluate_threshold_approval
+
+        result = evaluate_threshold_approval(
+            recall=0.83,
+            precision=0.51,
+            false_positives=302,
+            capacity=362,
+            pilot_approved=False,
+            calibration_approved=False,
+        )
+        self.assertEqual(result['status'], 'provisional')
+        self.assertTrue(result['external_validation_required'])
+
+    def test_calibration_decision_remains_sigmoid_without_external_validation(self) -> None:
+        from src.decision import decide_calibration_method
+
+        result = decide_calibration_method(
+            external_validation=False,
+            prefer='isotonic',
+        )
+        self.assertEqual(result['method'], 'sigmoid')
+        self.assertFalse(result['probability_calibrated'])
+
+    def test_threshold_can_be_approved_only_with_both_evidences(self) -> None:
+        from src.decision import evaluate_threshold_approval
+
+        result = evaluate_threshold_approval(
+            recall=0.83,
+            precision=0.51,
+            false_positives=250,
+            capacity=362,
+            pilot_approved=True,
+            calibration_approved=True,
+        )
+        self.assertEqual(result['status'], 'approved')
+
+    def test_backup_checksum_and_rollback_contract(self) -> None:
+        import hashlib
+
+        payload = b'test-artifact-payload'
+        with TemporaryDirectory() as directory:
+            backup = Path(directory) / 'model.joblib'
+            backup.write_bytes(payload)
+            checksum = hashlib.sha256(payload).hexdigest()
+            (Path(directory) / 'SHA256SUMS.txt').write_text(f'{checksum}  model.joblib\n')
+
+            self.assertEqual(
+                hashlib.sha256(backup.read_bytes()).hexdigest(),
+                checksum,
+            )
+
+    def test_mitigation_requires_support_and_both_classes(self) -> None:
+        from src.group_metrics import calculate_group_metrics
+
+        groups = pd.DataFrame({'grupo': ['A'] * 50 + ['B'] * 50})
+        y_true = np.array([0] * 45 + [1] * 5 + [0] * 45 + [1] * 5)
+        y_pred = np.array([0] * 50 + [1] * 50)
+        result = calculate_group_metrics(
+            y_true,
+            y_pred,
+            groups,
+            min_group_size=30,
+            min_class_support=10,
+        )
+
+        low_support = result.loc[result['grupo'] == 'B'].iloc[0]
+        self.assertIn('churn<10', low_support['advertencia_soporte'])
 
 
 if __name__ == "__main__":

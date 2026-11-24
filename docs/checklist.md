@@ -1,219 +1,278 @@
-# Checklist de revisión · Telco Churn + backend/frontend/docker
+# Checklist real del proyecto · Telco Churn
 
-Esta checklist actualiza la revisión del proyecto para incluir la recomendación de negocio, la validación del modelo, la arquitectura de servicio y la entrega operativa local con Docker. La revisión integral vigente está en [revision_integral_ep2.md](./revision_integral_ep2.md).
+Esta checklist refleja el estado verificable del repositorio al 23 de noviembre de 2026. La revisión histórica se conserva solo como referencia; las marcas siguientes prevalecen sobre afirmaciones antiguas.
 
-## Estado verificado del repositorio
+## Estado implementado y verificado
 
-Esta sección reemplaza el estado inicial desactualizado de la checklist. Las marcas siguientes se basan en el código y artefactos vigentes del repositorio.
+☑ Problema de negocio, KPI, ETL, EDA y split train/test definidos.
 
-☑ El proyecto define problema de negocio, KPI, dataset y flujo ETL/modelado.
+☑ Flujo canónico sin SMOTE: `class_weight='balanced'` en el SVM lineal.
 
-☑ La clasificación prioriza Recall y usa `class_weight='balanced'` sin SMOTE en el flujo canónico.
+☑ Selección por correlación absoluta mayor que 0.95 y SFS con 10 variables.
 
-☑ Existe FastAPI con `GET /health`, `POST /predict` y una interfaz HTML/JS integrada en `app/main.py`.
+☑ Entrenamiento y Optuna utilizan exclusivamente train; test se carga para evaluación final.
 
-☑ Existe `Dockerfile`, `.dockerignore` y `docker-compose.yml` para ejecución local.
+☑ FastAPI implementada con `GET /health`, `POST /predict`, Swagger y OpenAPI.
 
-☑ Existe lógica de umbral económico en `src/decision.py` y el artefacto actual guarda umbral y política operativa.
+☑ Dashboard HTML/JS integrado, responsive, narrativo y en español.
 
-☑ `/predict` devuelve clase, score, aproximación porcentual, nivel de riesgo, acción y contexto de métricas.
+☑ Frontend sin `customer_id`, con perfiles seleccionables que autocompletan y evalúan.
 
-☑ El flujo de inferencia acepta perfiles raw y matrices procesadas mediante `src/inference.py`.
+☑ Dashboard con gauge, score, umbral, recomendación, matriz de confusión y barras por permanencia.
 
-☑ Falta ejecutar y documentar una validación Docker real en un host con Docker activo.
+☑ Docker Desktop, `Dockerfile`, `.dockerignore` y `docker-compose.yml` validados localmente.
 
-☑ El API ya identifica explícitamente si su salida porcentual es una aproximación sigmoid o una probabilidad calibrada.
+☑ Contenedor `telco-churn-api` ejecutándose como `healthy` en el puerto 8000.
 
-☐ Falta calibrar formalmente el score para presentar una probabilidad estadísticamente válida: la aproximación actual no se llama calibrada.
+☑ `/`, `/health`, `/predict`, `/docs`, `/openapi.json` y `/favicon.ico` responden correctamente.
 
-☐ Falta sincronizar totalmente el artefacto generado por el notebook con el artefacto generado por `src/train.py`.
+☑ Inferencia raw y procesada implementada en `src/inference.py`.
 
-☐ Falta actualizar varias afirmaciones históricas de README, checklist y notebook.
+☑ Artefacto canónico: `output/modelos/telco_churn_pipeline.joblib`.
 
-## Pendientes consolidados
+☑ Artefacto isotónico opcional: `output/modelos/telco_churn_pipeline_isotonic.joblib`.
+
+☑ Suite vigente: 28 pruebas automatizadas pasan.
+
+☑ Notebook único: se conserva `02_Modelado_y_Evaluacion_ejecutado.ipynb` sin sufijo duplicado y fue reemplazado por la ejecución vigente.
+
+☑ Alertas de deriva: `scripts/evaluate_retraining_alert.py` exige periodos consecutivos y nunca reentrena automáticamente.
+
+☑ CI Docker: workflow levanta el contenedor, ejecuta smoke HTTP y carga ligera.
+
+☑ Backups reales: `scripts/backup_model_artifact.py` y rollback SHA-256 verificable implementados y probados.
+
+☑ Mitigación por grupo: criterio formalizado en `docs/criterio_mitigacion_grupos.md`.
+
+☑ Notebook completo ejecutado con `telco-ml` mediante nbconvert.
+
+☑ Autenticación opcional con `TELCO_API_KEY` implementada en `/predict`.
+
+☑ Logs HTTP estructurados JSON implementados sin request body ni datos de clientes.
+
+☑ CI creada en `.github/workflows/ci.yml` para pytest, deriva y Docker Compose.
+
+☑ Equidad disponible con intervalos Wilson 95% y advertencias de soporte mínimo.
+
+☑ Protocolos de piloto, reentrenamiento y rollback documentados en `docs/operacion_modelo.md`.
+
+☑ Artefacto versionado v2 con esquema `telco-churn-pipeline-v2`.
+
+☑ Hash SHA-256 persistido en `output/modelos/telco_churn_pipeline.sha256.txt` y expuesto por `/health` y `/predict`.
+
+☑ Reporte PSI de deriva generado en `output/resultados/monitorizacion_drift.csv`.
+
+☑ Métricas por grupo y análisis de permanencia generados en `output/resultados/metricas_por_grupo_test.csv`.
+
+☑ Umbral OOF candidato persistido como política provisional, no aprobada.
+
+☑ Probabilidad marcada explícitamente como aproximación sigmoid o calibración isotónica.
+
+☑ Se verificaron pruebas HTTP reales sobre Uvicorn y Docker.
+   - Uvicorn local respondió `200` en `/health` y `/predict`.
+   - Docker respondió `200` en `/health` y `/predict`.
+   - [scripts/smoke_test_api.py](../scripts/smoke_test_api.py) valida el contrato de salida mínimo.
+
+☑ **Notebook activo organizado y sincronizado en secciones académicas**
+   - Lazy Predict existe como una sola comparación opcional.
+   - Las métricas vigentes se mantienen en conclusiones y cierre.
+   - Falta una ejecución completa desde cero para regenerar todos los outputs almacenados.
+
+☑ **Estado de política formalizado en API y artefacto**
+   - El threshold actual se identifica como provisional y no aprobado.
+   - El API expone `operating_policy_status='provisional'` y validación externa pendiente.
+   - El dashboard advierte que no representa una decisión comercial automática.
+
+## Resultados vigentes
+
+### Modelo seleccionado
+
+- Modelo: SVM lineal balanceado ajustado por Optuna.
+- Variables seleccionadas: 10.
+- Test: 1.409 clientes.
+- Abandonos reales: 374.
+- Permanencias reales: 1.035.
+- TP: 310.
+- FP: 302.
+- FN: 64.
+- TN: 733.
+- Accuracy: 74.02%.
+- Precision: 50.65%.
+- Recall: 82.89%.
+- F1: 62.88%.
+- ROC-AUC: 85.13%.
+- PR-AUC: 68.54%.
+- Diagnóstico en test: 362 seleccionados; 229 TP, 133 FP; validación externa pendiente.
+
+Nota: la matriz anterior corresponde a la última ejecución canónica verificable. Las ejecuciones históricas deben conservarse como evidencia, no mezclarse con el artefacto vigente.
+
+### Umbral provisional
+
+- Método: cuantil 75 de scores OOF.
+- Threshold vigente: `0.7245316291913046`.
+- Estado: recalibrado OOF; validación externa pendiente.
+- No está aprobado como política comercial.
+- Debe validarse nuevamente antes de cambiar contactos, capacidad o costos.
+
+### Calibración
+
+Comparación entrenamiento con 5 folds:
+
+| Método | Brier | ROC-AUC |
+|---|---:|---:|
+| Isotónico | 0.136096 | 0.841004 |
+| Sigmoid | 0.136292 | 0.841652 |
+
+El pipeline canónico conserva el score SVM y usa una aproximación sigmoid. La calibración isotónica existe como artefacto separado, no reemplaza el baseline hasta validar estabilidad y tradeoff Recall/Precision fuera del test.
+
+## Pendientes reales del proyecto
 
 ### Prioridad crítica
 
-1. **Proteger el artefacto canónico**
-   - Evitar que una celda del notebook sobrescriba `telco_churn_pipeline.joblib` con `operating_threshold: None`.
-   - El notebook debe guardar el mismo contrato de metadata que `src/train.py`.
-   - Verificar que `operating_threshold`, `operating_policy`, `score_method` y `feature_columns` sean consistentes.
+1. **Cerrar la sincronización notebook/artefacto**
+   - Ejecutar el notebook completo desde cero con `telco-ml`.
+   - Confirmar que su SFS, Optuna, test y umbral coincidan exactamente con `src/train.py` y el artefacto.
+   - Documentar el `C` vigente y retirar cifras históricas contradictorias.
 
-2. **Validar Docker de extremo a extremo**
-   - Ejecutar `docker compose config`.
-   - Ejecutar `docker compose up --build` en una máquina con Docker activo.
-   - Validar `GET /health` y `POST /predict` dentro del contenedor.
-   - Documentar únicamente como probado lo que haya sido ejecutado realmente.
+2. **Validar el umbral operativo externamente**
+   - Probar la política con una cohorte temporal o externa.
+   - Aprobar Recall, precision, falsos positivos y capacidad antes de convertir el candidato en política definitiva.
+   - Medir costos reales de contacto, pérdida por churn y eficacia de retención.
 
-3. **Sincronizar documentación e implementación**
-   - Actualizar [README.md](../README.md) para indicar que la API acepta perfiles raw mediante el preprocesamiento de inferencia.
-   - Corregir nombres vigentes y métricas históricas en README, CHANGELOG y documentos técnicos.
-   - Reemplazar afirmaciones obsoletas de la checklist: no declarar como faltantes componentes ya implementados.
+3. **Decisión formal sobre probabilidades: mantener sigmoid y advertir explícitamente**
+   - La salida canónica conserva `probability_method='sigmoid_approximation'`.
+   - `probability_calibrated=False` no admite presentar el porcentaje como calibrado.
+   - El artefacto isotónico es opcional y no reemplaza el baseline sin validación externa.
 
-### Prioridad alta
+4. **Formalizar el contrato de producción**
+   - ☑ Artefacto v2, fecha, esquema y SHA-256 disponibles.
+   - Añadir autenticación si el servicio deja localhost.
+   - Registrar logs estructurados de solicitud, versión de artefacto y resultado sin datos sensibles.
+   - Añadir políticas explícitas de errores, timeouts y alertas.
 
-4. **Formalizar la salida probabilística**
-   - Evaluar `CalibratedClassifierCV` con `sigmoid` y/o regresión isotónica mediante CV de entrenamiento.
-   - Conservar el `decision_function` original si solo sirve como score de riesgo relativo.
-   - No renombrar `_sigmoid` como probabilidad calibrada.
-   - Si se obtiene calibración válida, persistir el método y validar Brier score/calibration curve.
-   - Evaluar si `probability_churn` debe representar probabilidad calibrada o aproximación etiquetada explícitamente.
-
-5. **Completar metadata de métricas del artefacto**
-   - Persistir Precision, Recall, F1, ROC-AUC, PR-AUC y umbral final de test.
-   - Hacer que `app/main.py` lea métricas reales del artefacto sin valores por defecto ambiguos.
-   - Añadir pruebas que impidan que el contrato devuelva métricas inventadas o cero silenciosamente.
-
-6. **Unificar el criterio operativo en todas las capas**
-   - Usar el mismo umbral persistido en `score_customers()`, `/predict`, scripts de negocio y métricas por grupo.
-   - Corregir scripts que todavía reportan el umbral 0.0 o `pipeline.predict()` si el objetivo es evaluar la política guardada.
-   - Documentar claramente qué métricas usan el threshold por defecto y cuáles usan el threshold operativo.
-
-7. **Actualizar y depurar el notebook de modelado**
-   - Mantener una sola celda Lazy Predict o utilizar una implementación única importada de forma defensiva.
-   - Eliminar duplicados de importaciones y celdas redundantes.
-   - Actualizar todas las cifras impresas para que correspondan al artefacto y ejecutaciones vigentes.
-   - Sustituir afirmaciones futuras o pendientes por conclusiones verificadas.
+5. **Completar automatización de calidad**
+   - No existe CI configurada en `.github/workflows/`.
+   - Añadir `pytest`, ejecución mínima canónica y validación Docker Compose.
+   - Añadir linting/formato y carga HTTP opcional.
 
 ### Prioridad académica
 
-8. **Organizar el notebook en bloques académicos 1–9**
-   - Bloque 1: configuración y carga.
-   - Bloque 2: split y test congelado.
+6. **Organizar el notebook académico**
+   - Bloque 1: configuración y contexto.
+   - Bloque 2: carga, split y test congelado.
    - Bloque 3: EDA y limpieza.
-   - Bloque 4: feature engineering y selección.
-   - Bloque 5: PCA/K-Means con límites explícitos.
-   - Bloque 6: Lazy Predict y comparación de línea base.
-   - Bloque 7: búsqueda de hiperparámetros Random Search, Grid Search y Optuna.
-   - Bloque 8: evaluación final y umbral operativo.
+   - Bloque 4: feature engineering y SFS.
+   - Bloque 5: PCA/K-Means y límites.
+   - Bloque 6: Lazy Predict y línea base.
+   - Bloque 7: Random Search, Grid Search y Optuna.
+   - Bloque 8: test final y umbral.
    - Bloque 9: conclusiones, límites y despliegue.
 
-9. **Estandarizar Lazy Predict**
-   - Ejecutar Lazy Predict solo dentro de una celda opcional, sin romper el notebook si falta el paquete.
-   - Guardar la comparación en `output/resultados/lazy_predict_recall_cv.csv` con nombre único.
-   - Documentar versiones de scikit-learn y lazypredict usadas.
-   - No permitir que Lazy Predict consulte test ni altere la selección final.
+7. **Limpiar el notebook activo**
+   - Mantener una sola celda Lazy Predict opcional.
+   - Eliminar importaciones y secciones redundantes.
+   - Reemplazar cifras impresas históricas por cifras del último artefacto vigente.
+   - Corregir textos y caracteres dañados por codificación.
 
-10. **Documentar el protocolo de búsqueda**
-    - Comparar Random Search, Grid Search y Optuna con métricas y folds idénticos.
-    - Mantener test fuera de todas las búsquedas.
-    - Registrar semilla, número de trials, timeout, mejor score y parámetros.
-    - Explicar por qué el SVM con `C≈0.1683` y `class_weight='balanced'` gana o permanece como baseline.
+8. **Alinear documentación académica**
+   - Unificar nombres de notebook y métricas en README, CHANGELOG, guía y presentación.
+   - Sustituir referencias históricas a `LinearRegression` como screening canónico.
+   - Documentar cuantil 75 y validación externa pendiente del umbral.
 
-11. **Cerrar el bloque académico de resultados**
-    - Integrar Recall, Precision, F1, ROC-AUC, PR-AUC, capacidad y costo.
-    - Presentar matriz de confusión y escenarios de umbral.
-    - Señalar explícitamente que el test fue explorado por el analista y que se requiere una cohorte temporal o externa.
+### Prioridad operativa
 
-### Prioridad de producto y documentación
+9. **Añadir versionado y monitorización del modelo**
+   - Mantener hash o versión del artefacto.
+   - Registrar deriva de variables y desempeño por periodo.
+   - Definir umbral de alerta y protocolo de reentrenamiento.
 
-12. **Documentar decisiones de arquitectura**
-    - Agregar una tabla FastAPI vs Flask vs Streamlit/Dash con ventajas y desventajas.
-    - Justificar FastAPI y HTML/JS como diseño elegido.
-    - Documentar cómo se separan backend, inferencia y frontend.
+10. **Validar equidad con soporte suficiente**
+    - Revisar grupos con tamaño y soporte suficientes.
+    - Presentar intervalos sin afirmar causalidad o injusticia automática.
+    - Definir criterios para mitigación supervisada.
 
-13. **Completar validaciones HTTP reales**
-    - Mantener pruebas automatizadas para `/health` y `/predict`.
-    - Añadir una prueba manual o automatizada que arranque Uvicorn y haga una petición HTTP real.
-    - Añadir validación de campos obligatorios y respuestas de error 400/503.
+11. **Medir impacto real**
+    - Ejecutar piloto controlado.
+    - Medir tasa real de retención y costo neto.
+    - No presentar métricas históricas como evidencia causal de retención.
 
-14. **Completar el cierre operativo**
-    - Documentar el arranque local con Conda y el arranque con Docker.
-    - Documentar variables de entorno numéricas de Windows.
-    - Explicar que el servicio usa un score aproximado hasta finalizar calibración.
-    - Agregar instrucciones de monitorización y reentrenamiento futuro.
+12. **Completar operación local reproducible**
+    - Documentar arranque Conda y Docker.
+    - Agregar pruebas reales de `/health` y `/predict`.
+    - Documentar backup, rollback y reinicio.
 
-15. **Actualizar el nombre del notebook vigente**
-    - Decidir si el archivo académico será `02_Modelado_y_Evaluacion.ipynb` o el nombre ejecutado será el único activo.
-    - Evitar que README, docs y AGENTS se refieran a un archivo que no existe.
-    - Mantener evidencia ejecutada sin crear notebooks duplicados o históricos.
+## Trabajo no bloqueante pero recomendable
 
-16. **Revisar artefactos históricos y limpieza continua**
-    - Verificar archivos `_legacy`, `_backup`, `_old`, checkpoints y cachés antes de cerrar el proyecto.
-    - Conservar solo `telco_churn_pipeline.joblib` como artefacto canónico salvo que exista una comparación versionada explícita.
-    - Evitar que el notebook regenere copias con nombres rivales o tablas obsoletas.
+- Añadir CI para `pytest`, validación de Docker Compose y ejecución mínima del script canónico.
+- Agregar formato y linting de Python.
+- Automatizar limpieza de cachés y artefactos históricos.
+- Agregar una pequeña pantalla de estado del artefacto en el dashboard.
+- Añadir pruebas de carga para el contenedor local.
 
----
+## Criterio de cierre
 
-## 07 · Puntos que fallan frente al prompt mejorado
+El proyecto podrá considerarse terminado operacionalmente cuando:
 
-1. [ ] El notebook sigue sin estar organizado como una estructura única “Bloque 1 a Bloque 9”.
-2. [ ] Lazy Predict puede duplicarse o faltar en la ejecución académica.
-3. [ ] Falta una comparación reproducible única de Random Search, Grid Search y Optuna.
-4. [ ] La documentación Docker debe contar una ejecución real, no solo archivos preparados.
-5. [ ] La justificación de arquitectura debe quedar consolidada fuera de comentarios dispersos.
-6. [ ] Falta calibración probabilística formal antes de presentar `probability_churn` como probabilidad real.
-7. [ ] Falta sincronizar README, checklist, notebook y artefacto con el estado vigente.
-8. [ ] Falta integrar coste de FN/FP, umbral operativo y métricas finales en una conclusión única.
+1. El notebook completo reproduzca el artefacto canónico.
+2. El umbral tenga aprobación externa y datos comerciales reales.
+3. La salida probabilística esté calibrada o etiquetada como aproximada sin ambigüedad.
+4. La API, dashboard y Docker estén respaldados por pruebas reproducibles.
+5. README, checklist, notebook y presentación tengan métricas y nombres consistentes.
 
----
+## Validación externa pendiente
 
-## 08 · Recomendación final de cierre
+☐ No existe en `data/` una cohorte temporal o externa adicional.
 
-El repositorio ya cuenta con modelo, pipeline de inferencia, API, frontend, Docker y una suite de pruebas. El cierre debe priorizar consistencia y validación real:
+- El holdout actual es 20% interno del dataset disponible y ya fue usado para diagnóstico.
+- No debe reutilizarse como validación externa independiente.
+- Falta una cohorte nueva o temporal no explorada antes de aprobar el umbral.
+- Falta un piloto controlado para medir retención real y costo operativo.
 
-1. Hacer que el notebook genere el mismo artefacto canónico que el script oficial.
-2. Calibrar o etiquetar explícitamente la salida probabilística.
-3. Sincronizar artefacto, API, scripts, notebooks y documentación.
-4. Validar Docker en un host real.
-5. Convertir el notebook activo en una entrega académica única y reproducible.
-6. Mantener test reservado y no volver a usarlo para seleccionar modelo, variables o umbral.
+## Decisión pendiente sobre calibración
 
----
+☐ Elegir si el servicio conserva la aproximación sigmoid o adopta isotónica.
 
-## Avance actualizado — 23 de noviembre de 2026
+- Sigmoid: Brier 0.136292 y ROC-AUC 0.841652 en CV train.
+- Isotónica: Brier 0.136096 y ROC-AUC 0.841004 en CV train.
+- Isotónica existe como artefacto separado.
+- No reemplazar el baseline sin validación temporal externa y comparación del tradeoff Recall/Precision.
 
-### Completado
+## Estado restante resumido
 
-☑ **Artefacto canónico protegido desde el notebook de modelado**
-   - La celda final ya deriva el umbral desde scores out-of-fold de train, no desde test.
-   - La metadata incluye `operating_threshold`, `operating_policy`, `feature_columns` y métricas test.
-   - La suite vigente sigue pasando: 17 pruebas.
+Completado:
+- API, dashboard, Docker y pruebas HTTP locales.
+- 21 pruebas automatizadas.
+- Artefacto v2, SHA-256, fecha y exposición en health/predict.
+- Reporte PSI de deriva sin alertas actuales.
+- Documentación académica alineada con métricas vigentes.
 
-☑ **Crash de SequentialFeatureSelector aislado y corregido**
-   - El default de SFS pasó de `LinearRegression` a `LogisticRegression` balanceada.
-   - El cambio evita el crash native observado en Windows con `LinearRegression`.
-   - `LinearRegression` permanece disponible solo como opción explícita de compatibilidad.
-   - Validado con 5.617 filas y 46 columnas; se seleccionaron 10 predictores sin reiniciar el proceso.
+Pendiente crítico:
+1. Cohorte temporal o externa y aprobación del umbral.
+2. Piloto controlado que mida retención real y costo neto.
+3. Autenticación y logs estructurados si se publica fuera de localhost.
+4. Ejecución completa del notebook desde el kernel `telco-ml` y limpieza final de outputs.
 
-☑ **Lazy Predict duplicado eliminado del notebook activo**
-   - Se retiró la segunda celda redundante que ejecutaba la misma comparación.
-   - La primera celda conserva importación defensiva y salida opcional.
+Pendiente operativo/recomendado:
+- CI para pruebas y Docker Compose.
+- Formato, linting y pruebas de carga.
+- Intervalos de confianza y soporte suficiente para equidad.
+- Dashboard de estado temporal y protocolización de reentrenamiento.
 
-☑ **Documentación principal sincronizada**
-   - [README.md](../README.md) ya describe LogisticRegression balanceada como screening estable.
-   - Ya indica que la inferencia acepta perfiles raw y matrices procesadas.
-   - [docs/guia_defensa_ep2.md](guia_defensa_ep2.md) usa la misma definición del estimador de screening.
-   - La suite documentada pasó de 13 a 17 pruebas verificadas.
+## Validación externa bloqueada por disponibilidad de datos
 
-☑ **Docker runtime validado**
-   - `Dockerfile`, `.dockerignore` y `docker-compose.yml` existen y están configurados.
-   - Docker Desktop está activo y `docker compose up --build -d` fue ejecutado.
-   - El contenedor `telco-churn-api` quedó en estado `healthy`.
-   - Se eliminó `output/` de `.dockerignore` para incluir el artefacto canónico.
-   - Se retiró el atributo obsoleto `version` de `docker-compose.yml`.
+☐ **Cohorte temporal o externa:** no existe una cohorte adicional en el repositorio.
 
-☑ **Direcciones HTTP verificadas**
-   - `/` responde `200` y muestra el formulario integrado.
-   - `/health` responde `200` con estado `ok` y metadata del artefacto.
-   - `/predict` responde `200` con score, decisión, aproximación porcentual y métricas reales.
-   - `/docs` responde `200`.
-   - `/openapi.json` responde `200`.
-   - `/favicon.ico` responde `200`.
+☐ **Piloto controlado:** no existe permiso comercial ni datos de intervención/retención observada.
 
-☑ **Dashboard de negocio implementado**
-   - La raíz presenta una interfaz tipo dashboard con sidebar, formulario y panel de resultados.
-   - El campo `customer_id` fue retirado del formulario y del contrato `/predict`.
-   - Los resultados incluyen gauge porcentual, score, umbral, decisión y barras de métricas.
-   - El formulario consume `/predict` sin recargar la página y muestra errores inline.
-   - El dashboard HTML/JS es responsive, usa perfiles sin identificador y explica resultados para públicos administrativo y técnico.
+- Estas tareas no pueden completarse localmente con el holdout actual.
+- Suministrar una cohorte nueva o temporal y el diseño piloto para continuar.
 
-### Pendiente para cerrar esta tarea
+## Cobertura de rúbrica EP3
 
-☐ Ejecutar desde cero las celdas del notebook activo y confirmar que el artefacto conserva el mismo contrato que `src/train.py`.
+☑ **IE9 Optimización de hiperparámetros (20%)**: Optuna ajusta `C` del SVM sobre train con tres folds y el modelo final se valida con cinco folds.
 
-## Siguiente tarea prioritaria
+☑ **IE10 Técnicas de ensamble (30%)**: Voting soft y Stacking están implementados y comparados por CV y test reservado.
 
-La siguiente tarea es ejecutar el notebook completo desde cero con el entorno `telco-ml` y confirmar que su celda final guarda exactamente el contrato del artefacto canónico: `operating_threshold`, `operating_policy`, `probability_method`, métricas de test y `feature_columns`.
+☑ **IE11 Generalización (20%)**: validación cruzada estratificada, test reservado y métricas Recall/Precision/F1/ROC-AUC/PR-AUC.
 
-Después se debe abordar formalmente la calibración probabilística. Hasta entonces, `probability_churn` permanece como aproximación sigmoid y no debe presentarse como probabilidad calibrada.
+☑ **IE12 Solución analítica óptima (30%)**: la selección conserva el SVM ajustado por prioridad Recall, contrastando el ensamble y justificando el tradeoff.

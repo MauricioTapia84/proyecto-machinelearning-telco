@@ -202,3 +202,109 @@ def select_operating_threshold(
             -float(row['threshold']),
         ),
     )
+
+
+def validate_operating_threshold(
+    y_true: Any,
+    scores: Any,
+    threshold: float,
+) -> dict[str, float | int | bool]:
+    """Diagnose one threshold without using test labels to choose it."""
+    labels = np.asarray(y_true, dtype=int)
+    risk_scores = np.asarray(scores, dtype=float)
+    if labels.ndim != 1 or risk_scores.ndim != 1 or len(labels) != len(risk_scores):
+        raise ValueError('y_true y scores deben ser vectores de igual longitud.')
+    if not np.isfinite(threshold):
+        raise ValueError('threshold debe ser finito.')
+
+    predictions = (risk_scores >= float(threshold)).astype(int)
+    tn, fp, fn, tp = confusion_matrix(labels, predictions, labels=[0, 1]).ravel()
+    positives = int(tp + fn)
+    negatives = int(tn + fp)
+    contacts = int(tp + fp)
+    return {
+        'threshold': float(threshold),
+        'contacts': contacts,
+        'recall': float(tp / positives) if positives else 0.0,
+        'precision': float(tp / contacts) if contacts else 0.0,
+        'specificity': float(tn / negatives) if negatives else 0.0,
+        'false_positive_rate': float(fp / negatives) if negatives else 0.0,
+        'max_score_below_threshold': bool(np.max(risk_scores) < float(threshold)),
+    }
+
+
+def compute_quantile_operating_threshold(
+    scores: Any,
+    *,
+    quantile: float = 0.75,
+) -> dict[str, float | int]:
+    """Derive a training-only percentile threshold from OOF scores."""
+    risk_scores = np.asarray(scores, dtype=float)
+    if risk_scores.ndim != 1 or not len(risk_scores):
+        raise ValueError('scores debe ser un vector no vacío.')
+    if not np.isfinite(risk_scores).all():
+        raise ValueError('scores debe contener valores finitos.')
+    if not np.isfinite(quantile) or not 0 < quantile < 1:
+        raise ValueError('quantile debe estar entre 0 y 1.')
+    threshold = float(np.quantile(risk_scores, quantile))
+    contacts = int((risk_scores >= threshold).sum())
+    return {
+        'threshold': threshold,
+        'contacts': contacts,
+        'quantile': float(quantile),
+    }
+
+
+def evaluate_threshold_approval(
+    *,
+    recall: float,
+    precision: float,
+    false_positives: int,
+    capacity: int,
+    pilot_approved: bool,
+    calibration_approved: bool,
+) -> dict[str, Any]:
+    """Approve an operating threshold only with real operational evidence."""
+    values = (recall, precision)
+    if any(not np.isfinite(value) or not 0.0 <= value <= 1.0 for value in values):
+        raise ValueError('Recall y precision deben estar entre 0 y 1.')
+    if false_positives < 0 or capacity < 0:
+        raise ValueError('Falsos positivos y capacidad deben ser no negativos.')
+    if false_positives > capacity:
+        raise ValueError('Los falsos positivos no pueden superar la capacidad registrada.')
+
+    approved = bool(pilot_approved and calibration_approved and capacity > 0)
+    return {
+        'status': 'approved' if approved else 'provisional',
+        'pilot_approved': bool(pilot_approved),
+        'calibration_approved': bool(calibration_approved),
+        'recall': float(recall),
+        'precision': float(precision),
+        'false_positives': int(false_positives),
+        'capacity': int(capacity),
+        'external_validation_required': not approved,
+    }
+
+
+def decide_calibration_method(
+    *,
+    external_validation: bool,
+    prefer: str,
+) -> dict[str, str | bool]:
+    """Select calibration only after independent validation."""
+    method = str(prefer).lower()
+    if method not in {'sigmoid', 'isotonic'}:
+        raise ValueError("prefer debe ser 'sigmoid' o 'isotonic'.")
+    if not external_validation:
+        return {
+            'method': 'sigmoid',
+            'status': 'provisional',
+            'reason': 'No existe validación externa; se conserva la aproximación sigmoid.',
+            'probability_calibrated': False,
+        }
+    return {
+        'method': method,
+        'status': 'approved',
+        'reason': 'Método seleccionado con validación externa registrada.',
+        'probability_calibrated': True,
+    }

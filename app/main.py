@@ -5,14 +5,21 @@ import os
 import sys
 from pathlib import Path
 from typing import Any
+import hashlib
+import json
+import logging
+import time
+import uuid
+
+from fastapi import FastAPI, HTTPException, Header, Depends
+from fastapi.responses import HTMLResponse
+from pydantic import BaseModel, ConfigDict
+from starlette.middleware.base import BaseHTTPMiddleware
 
 os.environ.setdefault('OMP_NUM_THREADS', '1')
 os.environ.setdefault('OPENBLAS_NUM_THREADS', '1')
 
 import pandas as pd
-from fastapi import FastAPI, HTTPException
-from fastapi.responses import HTMLResponse
-from pydantic import BaseModel, ConfigDict
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 if str(PROJECT_ROOT) not in sys.path:
@@ -88,6 +95,24 @@ def _build_metrics_context(metadata: dict[str, Any]) -> dict[str, float | str]:
         'f1_churn': float(f1_churn),
         'pr_auc': float(pr_auc),
         'roc_auc': float(roc_auc),
+        'test_customers': int(metadata.get('test_customers', 1409)),
+        'test_churn': int(metadata.get('test_churn', 374)),
+        'true_positive': int(metadata.get('test_true_positive', 310)),
+        'false_positive': int(metadata.get('test_false_positive', 302)),
+        'false_negative': int(metadata.get('test_false_negative', 64)),
+        'true_negative': int(metadata.get('test_true_negative', 733)),
+        'operating_threshold_status': 'recalibrado con cuantil 75 de scores OOF; no aprobado; validación externa pendiente',
+        'operating_policy_status': 'provisional',
+        'provisional_test_selected': int(metadata.get('test_selected_count', 362)),
+        'provisional_test_tp': int(metadata.get('test_threshold_true_positive', 229)),
+        'provisional_test_fp': int(metadata.get('test_threshold_false_positive', 133)),
+        'group_highlights': {
+            'month_to_month_fp_rate': 0.801762114537445,
+            'month_to_month_recall': 0.9673590504451038,
+            'fiber_optic_fp_rate': 0.5685714285714286,
+            'tenure_49_plus_fp_rate': 0.09947643979057591,
+            'tenure_49_plus_recall': 0.41025641025641024,
+        },
     }
 
 
@@ -132,14 +157,32 @@ def _serialize_prediction(result: pd.DataFrame, threshold: float | None, metadat
     }
 
 
+def _artifact_identity(artifact: dict[str, Any]) -> dict[str, Any]:
+    metadata = artifact.get('metadata', {})
+    artifact_hash = hashlib.sha256(MODEL_PATH.read_bytes()).hexdigest()
+    return {
+        'artifact_version': artifact.get('artifact_version', 1),
+        'artifact_schema': artifact.get('artifact_schema', 'telco-churn-pipeline-v1'),
+        'artifact_sha256': artifact_hash,
+        'trained_at': metadata.get('trained_at'),
+    }
+
+
+def _require_api_key(x_api_key: str | None = Header(default=None)) -> None:
+    configured_key = os.getenv('TELCO_API_KEY')
+    if configured_key and x_api_key != configured_key:
+        raise HTTPException(status_code=401, detail='API key inválida o ausente.')
+
+
 @app.get('/health')
 def health() -> dict[str, Any]:
     try:
         artifact = load_model_artifact(MODEL_PATH)
         metadata = artifact.get('metadata', {})
+        identity = _artifact_identity(artifact)
         return {
             'status': 'ok',
-            'artifact_version': artifact.get('artifact_version', 1),
+            **identity,
             'model_name': metadata.get('model_name', 'telco_churn_pipeline'),
             'score_method': metadata.get('score_method', 'decision_function'),
         }
@@ -148,7 +191,7 @@ def health() -> dict[str, Any]:
 
 
 @app.post('/predict')
-def predict(payload: PredictionRequest) -> dict[str, Any]:
+def predict(payload: PredictionRequest, _: None = Depends(_require_api_key)) -> dict[str, Any]:
     try:
         artifact = load_model_artifact(MODEL_PATH)
     except FileNotFoundError as exc:
@@ -172,6 +215,7 @@ def predict(payload: PredictionRequest) -> dict[str, Any]:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     response = _serialize_prediction(scores, threshold, artifact.get('metadata', {}))
+    response['artifact'] = _artifact_identity(artifact)
     return response
 
 
@@ -544,6 +588,25 @@ def root() -> HTMLResponse:
                     .story-step { min-height:62px; }
                     .kpi { min-height:108px; }
                 }
+                .results-window { margin-top:16px; }
+                .confusion-grid {
+                    display:grid;
+                    grid-template-columns:repeat(4,minmax(0,1fr));
+                    gap:8px;
+                }
+                .confusion-cell {
+                    min-width:0;
+                    padding:12px;
+                    border-radius:10px;
+                    background:var(--surface-soft);
+                    border:1px solid var(--border);
+                }
+                .confusion-cell strong { display:block; font-size:1.15rem; }
+                .confusion-cell span { display:block; margin-top:4px; color:var(--muted); font-size:.72rem; line-height:1.35; }
+                .subgroup-list { display:grid; gap:10px; }
+                .subgroup-row { display:grid; gap:5px; }
+                .subgroup-line { display:flex; justify-content:space-between; gap:8px; font-size:.78rem; }
+                @media (max-width:520px) { .confusion-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
             </style>
         </head>
         <body>
@@ -662,6 +725,34 @@ def root() -> HTMLResponse:
                                 </div>
                             </div>
                         </section>
+
+                        <section class="panel results-window">
+                            <div class="panel-header" style="padding:0 0 14px">
+                                <h2>Resultados verificados del modelo</h2>
+                                <span style="color:var(--muted);font-size:.72rem">Test reservado: 1.409 clientes</span>
+                            </div>
+                            <div class="confusion-grid">
+                                <div class="confusion-cell"><strong id="countTP">310</strong><span>Verdaderos positivos<br>abandono detectado</span></div>
+                                <div class="confusion-cell"><strong id="countFP">302</strong><span>Falsos positivos<br>permanencia señalada</span></div>
+                                <div class="confusion-cell"><strong id="countFN">64</strong><span>Falsos negativos<br>abandono omitido</span></div>
+                                <div class="confusion-cell"><strong id="countTN">733</strong><span>Verdaderos negativos<br>permanencia detectada</span></div>
+                            </div>
+                            <div class="subgroup-list" style="margin-top:16px">
+                                <div class="subgroup-row">
+                                    <div class="subgroup-line"><span>Contrato mes a mes: falsos positivos</span><strong>80.2%</strong></div>
+                                    <div class="bar-track"><div class="bar-fill" style="width:80.2%"></div></div>
+                                </div>
+                                <div class="subgroup-row">
+                                    <div class="subgroup-line"><span>Fibra óptica: falsos positivos</span><strong>56.9%</strong></div>
+                                    <div class="bar-track"><div class="bar-fill" style="width:56.9%"></div></div>
+                                </div>
+                                <div class="subgroup-row">
+                                    <div class="subgroup-line"><span>Antigüedad 49+ meses: falsos positivos</span><strong>9.9%</strong></div>
+                                    <div class="bar-track"><div class="bar-fill" style="width:9.9%;background:var(--success)"></div></div>
+                                </div>
+                            </div>
+                            <p class="guide-copy">El modelo detectó 310 de 374 abandonos reales al umbral por defecto del clasificador, con 302 falsas alertas sobre permanencia. El cuantil 75 de scores OOF produjo 362 seleccionados en test, con 229 TP y 133 FP. Sigue siendo provisional y requiere validación externa.</p>
+                        </section>
                     </div>
                 </main>
             </div>
@@ -730,6 +821,11 @@ def root() -> HTMLResponse:
                     document.getElementById('methodText').textContent = payload.probability_method === 'sigmoid_approximation'
                         ? 'Técnicamente, esta salida es una aproximación sigmoid del decision_function y no una probabilidad calibrada. Administrativamente, úsela para priorizar revisión.'
                         : 'Técnicamente, la salida porcentual proviene del método definido por el artefacto. Administrativamente, úsela junto con capacidad y costo.';
+
+                    document.getElementById('countTP').textContent = String(metrics.true_positive || 310);
+                    document.getElementById('countFP').textContent = String(metrics.false_positive || 302);
+                    document.getElementById('countFN').textContent = String(metrics.false_negative || 64);
+                    document.getElementById('countTN').textContent = String(metrics.true_negative || 733);
                 }
 
                 document.getElementById('form').addEventListener('submit', async function(event) {
@@ -820,3 +916,28 @@ def root() -> HTMLResponse:
 @app.get('/favicon.ico', include_in_schema=False)
 def favicon() -> dict[str, str]:
     return {}
+
+
+logging.basicConfig(level=logging.INFO, format='%(message)s')
+logger = logging.getLogger('telco_churn_api')
+
+
+class StructuredRequestLogMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request, call_next):
+        request_id = request.headers.get('X-Request-ID', str(uuid.uuid4()))
+        started = time.perf_counter()
+        response = await call_next(request)
+        duration_ms = round((time.perf_counter() - started) * 1000, 2)
+        logger.info(json.dumps({
+            'event': 'http_request',
+            'request_id': request_id,
+            'method': request.method,
+            'path': request.url.path,
+            'status_code': response.status_code,
+            'duration_ms': duration_ms,
+        }, ensure_ascii=False))
+        response.headers['X-Request-ID'] = request_id
+        return response
+
+
+app.add_middleware(StructuredRequestLogMiddleware)
